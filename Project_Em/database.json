@@ -1,0 +1,320 @@
+{
+  "roles": [
+    { "id": 1, "code": "staff", "name": "Staff" },
+    { "id": 2, "code": "manager", "name": "Manager" },
+    { "id": 3, "code": "general_manager", "name": "General Manager" },
+    { "id": 4, "code": "deputy_general_director", "name": "Deputy General Director" },
+    { "id": 5, "code": "general_director", "name": "General Director" }
+  ],
+
+  "departments": [
+    { "id": 1, "code": "HR", "name": "Human Resources" },
+    { "id": 2, "code": "AF", "name": "Accounting & Finance" },
+    { "id": 3, "code": "SA", "name": "Sales" },
+    { "id": 4, "code": "MK", "name": "Marketing" },
+    { "id": 5, "code": "IT", "name": "Information Technology" }
+  ],
+
+  "employees": [
+  { "id": 1, "fullName": "Andrew Nguyen", "email": "andrew.nguyen@company.com", "gender": "male", "phoneNumber": "0901000001", "username": "andrew.nguyen", "password": "123456", "departmentId": 1, "roleId": 1, "avatar": "images/avatars/1.png" },
+  { "id": 2, "fullName": "Brian Pham", "email": "brian.pham@company.com", "gender": "male", "phoneNumber": "0901000002", "username": "brian.pham", "password": "123456", "departmentId": 1, "roleId": 1, "avatar": "images/avatars/2.png" },
+  { "id": 3, "fullName": "Cindy Le", "email": "cindy.le@company.com", "gender": "female", "phoneNumber": "0901000003", "username": "cindy.le", "password": "123456", "departmentId": 1, "roleId": 2, "avatar": "images/avatars/3.png" },
+  { "id": 4, "fullName": "David Tran", "email": "david.tran@company.com", "gender": "male", "phoneNumber": "0902000001", "username": "david.tran", "password": "123456", "departmentId": 2, "roleId": 1, "avatar": "images/avatars/4.png" },
+  { "id": 5, "fullName": "Emma Ngo", "email": "emma.ngo@company.com", "gender": "female", "phoneNumber": "0902000002", "username": "emma.ngo", "password": "123456", "departmentId": 2, "roleId": 1, "avatar": "images/avatars/5.png" },
+  { "id": 6, "fullName": "Kevin Phan", "email": "kevin.phan@company.com", "gender": "male", "phoneNumber": "0902000003", "username": "kevin.phan", "password": "123456", "departmentId": 2, "roleId": 2, "avatar": "images/avatars/6.png" },
+  { "id": 7, "fullName": "Linda Vu", "email": "linda.vu@company.com", "gender": "female", "phoneNumber": "0903000001", "username": "linda.vu", "password": "123456", "departmentId": 3, "roleId": 1, "avatar": "images/avatars/7.png" },
+  { "id": 8, "fullName": "Michael Dang", "email": "michael.dang@company.com", "gender": "male", "phoneNumber": "0903000002", "username": "michael.dang", "password": "123456", "departmentId": 3, "roleId": 1, "avatar": "images/avatars/8.png" },
+  { "id": 9, "fullName": "Nathan Bui", "email": "nathan.bui@company.com", "gender": "male", "phoneNumber": "0903000003", "username": "nathan.bui", "password": "123456", "departmentId": 3, "roleId": 2, "avatar": "images/avatars/9.png" },
+  { "id": 10, "fullName": "Olivia Hoang", "email": "olivia.hoang@company.com", "gender": "female", "phoneNumber": "0904000001", "username": "olivia.hoang", "password": "123456", "departmentId": 4, "roleId": 1, "avatar": "images/avatars/10.png" },
+  { "id": 11, "fullName": "Paul Trinh", "email": "paul.trinh@company.com", "gender": "male", "phoneNumber": "0904000002", "username": "paul.trinh", "password": "123456", "departmentId": 4, "roleId": 1, "avatar": "images/avatars/11.png" },
+  { "id": 12, "fullName": "Quinn Do", "email": "quinn.do@company.com", "gender": "male", "phoneNumber": "0904000003", "username": "quinn.do", "password": "123456", "departmentId": 4, "roleId": 2, "avatar": "images/avatars/12.png" },
+  { "id": 13, "fullName": "Rachel Phan", "email": "rachel.phan@company.com", "gender": "female", "phoneNumber": "0905000001", "username": "rachel.phan", "password": "123456", "departmentId": 5, "roleId": 1, "avatar": "images/avatars/13.png" },
+  { "id": 14, "fullName": "Steven Vu", "email": "steven.vu@company.com", "gender": "male", "phoneNumber": "0905000002", "username": "steven.vu", "password": "123456", "departmentId": 5, "roleId": 1, "avatar": "images/avatars/14.png" },
+  { "id": 15, "fullName": "Tina Ngo", "email": "tina.ngo@company.com", "gender": "female", "phoneNumber": "0905000003", "username": "tina.ngo", "password": "123456", "departmentId": 5, "roleId": 2, "avatar": "images/avatars/15.png" },
+  { "id": 16, "fullName": "Uyen Dang", "email": "uyen.dang@company.com", "gender": "female", "phoneNumber": "0906000001", "username": "uyen.dang", "password": "123456", "departmentId": null, "roleId": 3, "avatar": "images/avatars/16.png" },
+  { "id": 17, "fullName": "Victor Tran", "email": "victor.tran@company.com", "gender": "male", "phoneNumber": "0907000001", "username": "victor.tran", "password": "123456", "departmentId": null, "roleId": 4, "avatar": "images/avatars/17.png" },
+  { "id": 18, "fullName": "William Pham", "email": "william.pham@company.com", "gender": "male", "phoneNumber": "0908000001", "username": "william.pham", "password": "123456", "departmentId": null, "roleId": 5, "avatar": "images/avatars/18.png" }
+],
+
+  "forms": [
+    {
+      "id": 1,
+      "code": "leave_application",
+      "name": "Leave Application",
+      "allowedDepartmentsId": [1, 2, 3, 4, 5],
+      "workflowSteps": [
+        { "step": 1, "roleId": 2 },
+        { "step": 2, "roleId": 2, "departmentId": 1 },
+        { "step": 3, "roleId": 3, "condition": "if leave_days > 3" }
+      ]
+    },
+    {
+      "id": 2,
+      "code": "expense_advance_request",
+      "name": "Expense & Advance Request",
+      "allowedDepartmentsId": [1, 2, 3, 4, 5],
+      "workflowSteps": [
+        { "step": 1, "roleId": 2 },
+        { "step": 2, "roleId": 2, "departmentId": 2 },
+        { "step": 3, "roleId": 3, "condition": "if amount > 5000000" }
+      ]
+    },
+    {
+      "id": 3,
+      "code": "sales_contract_discount_approval",
+      "name": "Sales Contract & Discount Approval",
+      "allowedDepartmentsId": [3],
+      "workflowSteps": [
+        { "step": 1, "roleId": 2, "departmentId": 3 },
+        { "step": 2, "roleId": 3 },
+        { "step": 3, "roleId": 5, "condition": "if discount > 10%" }
+      ]
+    },
+    {
+      "id": 4,
+      "code": "marketing_budget_campaign_proposal",
+      "name": "Marketing Budget & Campaign Proposal",
+      "allowedDepartmentsId": [4],
+      "workflowSteps": [
+        { "step": 1, "roleId": 2, "departmentId": 4 },
+        { "step": 2, "roleId": 2, "departmentId": 2 },
+        { "step": 3, "roleId": 4, "condition": "if budget > 10000000" }
+      ]
+    },
+    {
+      "id": 5,
+      "code": "internal_transfer_request",
+      "name": "Internal Transfer Request",
+      "allowedDepartmentsId": [1, 2, 3, 4, 5],
+      "workflowSteps": [
+        { "step": 1, "roleId": 2 },
+        { "step": 2, "roleId": 2, "departmentId": 1 },
+        { "step": 3, "roleId": 4 }
+      ]
+    }
+  ],
+
+  "requests": [
+    {
+      "id": 1,
+      "formId": 1,
+      "title": "Nghỉ phép đi chơi lễ",
+      "creatorId": 1,
+      "departmentId": 1,
+      "status": "inprogress",
+      "fields": {
+        "leaveType": "Annual",
+        "startDate": "2025-12-20",
+        "endDate": "2025-12-25",
+        "leaveDays": 5,
+        "reason": "Đi du lịch cùng gia đình",
+        "attachments": []
+      },
+      "createdAt": "2025-11-10T12:00:00",
+      "updatedAt": "2025-11-10T12:00:00"
+    },
+    {
+      "id": 2,
+      "formId": 1,
+      "title": "Nghỉ ốm cấp cứu",
+      "creatorId": 2,
+      "departmentId": 1,
+      "status": "inprogress",
+      "fields": {
+        "leaveType": "Sick",
+        "startDate": "2025-11-12",
+        "endDate": "2025-11-14",
+        "leaveDays": 3,
+        "reason": "Ốm cấp cứu",
+        "attachments": []
+      },
+      "createdAt": "2025-11-10T13:00:00",
+      "updatedAt": "2025-11-10T13:00:00"
+    },
+    {
+      "id": 3,
+      "formId": 2,
+      "title": "Tạm ứng chi phí công tác Hà Nội",
+      "creatorId": 4,
+      "departmentId": 2,
+      "status": "inprogress",
+      "fields": {
+        "amount": 4000000,
+        "currency": "VND",
+        "purpose": "Đi công tác Hà Nội",
+        "expenseDate": "2025-11-20",
+        "attachments": ["uploads/receipt_3.pdf"]
+      },
+      "createdAt": "2025-11-10T12:30:00",
+      "updatedAt": "2025-11-10T12:30:00"
+    },
+    {
+      "id": 4,
+      "formId": 2,
+      "title": "Chi phí công tác Đà Nẵng",
+      "creatorId": 5,
+      "departmentId": 2,
+      "status": "inprogress",
+      "fields": {
+        "amount": 6000000,
+        "currency": "VND",
+        "purpose": "Đi công tác Đà Nẵng",
+        "expenseDate": "2025-11-22",
+        "attachments": [
+          "uploads/receipt_1.pdf",
+          "uploads/receipt_2.jpg"
+        ]
+      },
+      "createdAt": "2025-11-10T12:45:00",
+      "updatedAt": "2025-11-10T12:45:00"
+    },
+    {
+      "id": 5,
+      "formId": 3,
+      "title": "Hợp đồng khách hàng ABC",
+      "creatorId": 7,
+      "departmentId": 3,
+      "status": "inprogress",
+      "fields": {
+        "contractValue": 20000000,
+        "discount": 5,
+        "customerName": "ABC Corp",
+        "contractStartDate": "2025-12-01",
+        "contractEndDate": "2026-12-01",
+        "notes": "",
+        "attachments": [
+          "uploads/contracts/contract_ABC_v1.pdf",
+          "uploads/contracts/contract_ABC_signed.pdf"
+        ]
+      },
+      "createdAt": "2025-11-10T13:00:00",
+      "updatedAt": "2025-11-10T13:00:00"
+    },
+    {
+      "id": 6,
+      "formId": 3,
+      "title": "Hợp đồng khách hàng XYZ",
+      "creatorId": 8,
+      "departmentId": 3,
+      "status": "inprogress",
+      "fields": {
+        "contractValue": 50000000,
+        "discount": 12,
+        "customerName": "XYZ Ltd",
+        "contractStartDate": "2025-12-10",
+        "contractEndDate": "2026-12-10",
+        "notes": "Ưu đãi đặc biệt",
+        "attachments": [
+          "uploads/contracts/contract_XYZ_v1.pdf",
+          "uploads/contracts/contract_XYZ_signed.pdf"
+        ]
+      },
+      "createdAt": "2025-11-10T13:15:00",
+      "updatedAt": "2025-11-10T13:15:00"
+    },
+    {
+      "id": 7,
+      "formId": 4,
+      "title": "Ngân sách chiến dịch Tết",
+      "creatorId": 10,
+      "departmentId": 4,
+      "status": "inprogress",
+      "fields": {
+        "budget": 12000000,
+        "campaignName": "Tết 2026",
+        "startDate": "2025-12-20",
+        "endDate": "2026-01-10",
+        "description": "Quảng cáo TV và Online",
+        "expectedROI": 1.5,
+        "attachments": []
+      },
+      "createdAt": "2025-11-10T13:30:00",
+      "updatedAt": "2025-11-10T13:30:00"
+    },
+    {
+      "id": 8,
+      "formId": 4,
+      "title": "Chiến dịch Giáng Sinh",
+      "creatorId": 11,
+      "departmentId": 4,
+      "status": "inprogress",
+      "fields": {
+        "budget": 8000000,
+        "campaignName": "Giáng Sinh 2025",
+        "startDate": "2025-12-15",
+        "endDate": "2025-12-31",
+        "description": "Quảng cáo Online",
+        "expectedROI": 1.2,
+        "attachments": []
+      },
+      "createdAt": "2025-11-10T13:45:00",
+      "updatedAt": "2025-11-10T13:45:00"
+    },
+    {
+      "id": 9,
+      "formId": 5,
+      "title": "Điều chuyển nhân viên A",
+      "creatorId": 1,
+      "departmentId": 1,
+      "status": "inprogress",
+      "fields": {
+        "employeeToTransfer": 2,
+        "fromDepartment": 1,
+        "toDepartment": 3,
+        "reason": "Tăng cường nhân sự Sales",
+        "transferDate": "2025-12-01",
+        "attachments": []
+      },
+      "createdAt": "2025-11-10T14:00:00",
+      "updatedAt": "2025-11-10T14:00:00"
+    },
+    {
+      "id": 10,
+      "formId": 5,
+      "title": "Điều chuyển nhân viên B",
+      "creatorId": 3,
+      "departmentId": 1,
+      "status": "inprogress",
+      "fields": {
+        "employeeToTransfer": 5,
+        "fromDepartment": 1,
+        "toDepartment": 2,
+        "reason": "Hỗ trợ Accounting",
+        "transferDate": "2025-12-05",
+        "attachments": []
+      },
+      "createdAt": "2025-11-10T14:15:00",
+      "updatedAt": "2025-11-10T14:15:00"
+    }
+  ],
+  "requestApprovalSteps": [
+    { "id": 1, "requestId": 1, "step": 1, "approverId": 3, "status": "approved", "comment": "OK" },
+    { "id": 2, "requestId": 1, "step": 2, "approverId": 2, "status": "pending", "comment": "" },
+    { "id": 3, "requestId": 2, "step": 1, "approverId": 3, "status": "pending", "comment": "" },
+    { "id": 4, "requestId": 2, "step": 2, "approverId": 2, "status": "pending", "comment": "" },
+    { "id": 5, "requestId": 3, "step": 1, "approverId": 6, "status": "pending", "comment": "" },
+    { "id": 6, "requestId": 3, "step": 2, "approverId": 6, "status": "pending", "comment": "" },
+    { "id": 7, "requestId": 3, "step": 3, "approverId": 16, "status": "pending", "comment": "" },
+    { "id": 8, "requestId": 4, "step": 1, "approverId": 6, "status": "pending", "comment": "" },
+    { "id": 9, "requestId": 4, "step": 2, "approverId": 6, "status": "pending", "comment": "" },
+    { "id": 10, "requestId": 4, "step": 3, "approverId": 16, "status": "pending", "comment": "" },
+    { "id": 11, "requestId": 5, "step": 1, "approverId": 9, "status": "pending", "comment": "" },
+    { "id": 12, "requestId": 5, "step": 2, "approverId": 9, "status": "pending", "comment": "" },
+    { "id": 13, "requestId": 5, "step": 3, "approverId": 17, "status": "pending", "comment": "" },
+    { "id": 14, "requestId": 6, "step": 1, "approverId": 9, "status": "pending", "comment": "" },
+    { "id": 15, "requestId": 6, "step": 2, "approverId": 9, "status": "pending", "comment": "" },
+    { "id": 16, "requestId": 6, "step": 3, "approverId": 17, "status": "pending", "comment": "" },
+    { "id": 17, "requestId": 7, "step": 1, "approverId": 12, "status": "pending", "comment": "" },
+    { "id": 18, "requestId": 7, "step": 2, "approverId": 6, "status": "pending", "comment": "" },
+    { "id": 19, "requestId": 7, "step": 3, "approverId": 17, "status": "pending", "comment": "" },
+    { "id": 20, "requestId": 8, "step": 1, "approverId": 12, "status": "pending", "comment": "" },
+    { "id": 21, "requestId": 8, "step": 2, "approverId": 6, "status": "pending", "comment": "" },
+    { "id": 22, "requestId": 8, "step": 3, "approverId": 17, "status": "pending", "comment": "" },
+    { "id": 23, "requestId": 9, "step": 1, "approverId": 3, "status": "pending", "comment": "" },
+    { "id": 24, "requestId": 9, "step": 2, "approverId": 2, "status": "pending", "comment": "" },
+    { "id": 25, "requestId": 9, "step": 3, "approverId": 17, "status": "pending", "comment": "" },
+    { "id": 26, "requestId": 10, "step": 1, "approverId": 3, "status": "pending", "comment": "" },
+    { "id": 27, "requestId": 10, "step": 2, "approverId": 2, "status": "pending", "comment": "" },
+    { "id": 28, "requestId": 10, "step": 3, "approverId": 17, "status": "pending", "comment": "" }
+  ]
+}
