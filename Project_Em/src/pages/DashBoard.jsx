@@ -2,6 +2,7 @@ import { useAppContext } from "../provider/AppProvider";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Link } from "react-router-dom";
+import EmployeeManager from "../components/EmployeeManager";
 
 function DashBoard() {
   const { forms, requests } = useAppContext();
@@ -41,10 +42,10 @@ function DashBoard() {
     const needApproval =
       user.roleId !== 1
         ? requests.filter((r) =>
-            r.requestApprovalSteps?.some(
-              (step) => step.approverId === user.id && step.status === "pending"
-            )
+          r.requestApprovalSteps?.some(
+            (step) => step.approverId === user.id && step.status === "pending"
           )
+        )
         : [];
 
     setUserRequests({ inprogress, finish, reject, cancel, needApproval });
@@ -70,6 +71,9 @@ function DashBoard() {
   ];
 
   if (user?.roleId !== 1) tabs.push({ key: "needApproval", label: "Need Approval" });
+  if (user?.roleId === 2 && user?.departmentId === 1) {
+    tabs.push({ key: "manageEmployees", label: "Manage Employees" });
+  }
 
   return (
     <>
@@ -105,6 +109,8 @@ function DashBoard() {
           ) : (
             <p className="text-muted">Don't have service</p>
           )
+        ) : activeTab === "manageEmployees" ? (
+          <EmployeeManager />
         ) : userRequests[activeTab]?.length > 0 ? (
           userRequests[activeTab].map((req) => (
             <div className="col-md-4 mb-3" key={req.id}>

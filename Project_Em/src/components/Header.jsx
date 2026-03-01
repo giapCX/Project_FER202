@@ -16,7 +16,13 @@ function Header() {
 
       {isLoggedIn ? (
         <div>
-          <span className="me-3">Hello, {user?.fullName}</span>
+          <span
+            className="me-3"
+            style={{ cursor: "pointer", textDecoration: "underline" }}
+            onClick={() => navigate("/profile")}
+          >
+            Hello, {user?.fullName}
+          </span>
           <button className="btn btn-outline-light btn-sm" onClick={handleLogout}>
             Log Out
           </button>

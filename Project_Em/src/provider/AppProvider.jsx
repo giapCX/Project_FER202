@@ -55,6 +55,47 @@ const AppProvider = ({ children }) => {
     fetchData();
   }, []);
 
+  const fetchEmployees = async () => {
+    try {
+      const res = await axios.get("http://localhost:9999/employees");
+      setEmployees(res.data);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+    }
+  };
+
+  const addEmployee = async (newEmployee) => {
+    try {
+      const res = await axios.post("http://localhost:9999/employees", newEmployee);
+      setEmployees([...employees, res.data]);
+      return res.data;
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      throw error;
+    }
+  };
+
+  const updateEmployee = async (id, updatedData) => {
+    try {
+      const res = await axios.put(`http://localhost:9999/employees/${id}`, updatedData);
+      setEmployees(employees.map(emp => emp.id === id ? res.data : emp));
+      return res.data;
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      throw error;
+    }
+  };
+
+  const deleteEmployee = async (id) => {
+    try {
+      await axios.delete(`http://localhost:9999/employees/${id}`);
+      setEmployees(employees.filter(emp => emp.id !== id));
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      throw error;
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -68,6 +109,10 @@ const AppProvider = ({ children }) => {
         forms,
         requests,
         requestApprovalSteps,
+        fetchEmployees,
+        addEmployee,
+        updateEmployee,
+        deleteEmployee,
       }}
     >
       {children}
