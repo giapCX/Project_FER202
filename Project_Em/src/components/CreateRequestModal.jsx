@@ -237,7 +237,7 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
           )}
 
           {/* Phần đính kèm file - chọn từ máy */}
-          <Form.Group className="mb-4">
+          {/* <Form.Group className="mb-4">
             <Form.Label>
               Attachments (select files from your computer)
             </Form.Label>
@@ -268,7 +268,7 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
                 </ul>
               </div>
             )}
-          </Form.Group>
+          </Form.Group> */}
 
           <div className="text-end mt-4">
             <Button variant="secondary" onClick={onHide} className="me-3">
