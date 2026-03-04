@@ -140,6 +140,7 @@ function DashBoard() {
 
     const isLeave = selectedForm.code === "leave_application";
     const isExpense = selectedForm.code === "expense_advance_request";
+    const isInternalTransfer = selectedForm.code === "internal_transfer_request";
 
     if (isLeave) {
       if (
@@ -156,6 +157,18 @@ function DashBoard() {
     if (isExpense) {
       if (!fields.purpose || !fields.amount || fields.amount <= 0) {
         setError("Vui lòng điền mục đích và số tiền hợp lệ.");
+        return;
+      }
+    }
+
+    if (isInternalTransfer) {
+      if (!fields.currentDepartment || !fields.targetDepartment || !fields.reason) {
+        setError("Vui lòng nhập đầy đủ phòng ban và lý do điều chuyển.");
+        return;
+      }
+
+      if (fields.currentDepartment === fields.targetDepartment) {
+        setError("Phòng ban mới phải khác phòng ban hiện tại.");
         return;
       }
     }
@@ -339,6 +352,64 @@ function DashBoard() {
                               name="note"
                               value={fields.note || ""}
                               onChange={handleFieldChange}
+                            />
+                          </Form.Group>
+                        </>
+                      )}
+
+                      {selectedForm.code === "internal_transfer_request" && (
+                        <>
+                          <Row>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Phòng ban hiện tại *</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="currentDepartment"
+                                  value={fields.currentDepartment || ""}
+                                  onChange={handleFieldChange}
+                                  placeholder="Nhập phòng ban hiện tại"
+                                  required
+                                />
+                              </Form.Group>
+                            </Col>
+
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <Form.Label>Phòng ban chuyển đến *</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  name="targetDepartment"
+                                  value={fields.targetDepartment || ""}
+                                  onChange={handleFieldChange}
+                                  placeholder="Nhập phòng ban muốn chuyển đến"
+                                  required
+                                />
+                              </Form.Group>
+                            </Col>
+                          </Row>
+
+                          <Form.Group className="mb-3">
+                            <Form.Label>Chức danh mới (nếu có)</Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="newPosition"
+                              value={fields.newPosition || ""}
+                              onChange={handleFieldChange}
+                              placeholder="Nhập chức danh mới nếu có"
+                            />
+                          </Form.Group>
+
+                          <Form.Group className="mb-4">
+                            <Form.Label>Lý do điều chuyển *</Form.Label>
+                            <Form.Control
+                              as="textarea"
+                              rows={3}
+                              name="reason"
+                              value={fields.reason || ""}
+                              onChange={handleFieldChange}
+                              placeholder="Trình bày lý do điều chuyển nội bộ..."
+                              required
                             />
                           </Form.Group>
                         </>

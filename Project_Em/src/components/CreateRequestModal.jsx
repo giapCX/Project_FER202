@@ -15,6 +15,7 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
 
   const isLeave = selectedForm.code === "leave_application";
   const isExpense = selectedForm.code === "expense_advance_request";
+  const isInternalTransfer = selectedForm.code === "internal_transfer_request";
 
   const resetForm = () => {
     setTitle("");
@@ -92,6 +93,18 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
     if (isExpense) {
       if (!fields.purpose || !fields.amount || fields.amount <= 0) {
         setError("Please enter purpose and a valid amount.");
+        return;
+      }
+    }
+
+    if (isInternalTransfer) {
+      if (!fields.currentDepartment || !fields.targetDepartment || !fields.reason) {
+        setError("Please fill in department and reason for internal transfer.");
+        return;
+      }
+
+      if (fields.currentDepartment === fields.targetDepartment) {
+        setError("Target department must be different from current department.");
         return;
       }
     }
@@ -231,6 +244,65 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
                   name="note"
                   value={fields.note || ""}
                   onChange={handleFieldChange}
+                />
+              </Form.Group>
+            </>
+          )}
+
+          {/* Fields cho điều chuyển nội bộ */}
+          {isInternalTransfer && (
+            <>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Current Department *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="currentDepartment"
+                      value={fields.currentDepartment || user?.department || ""}
+                      onChange={handleFieldChange}
+                      placeholder="Enter current department"
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Target Department *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="targetDepartment"
+                      value={fields.targetDepartment || ""}
+                      onChange={handleFieldChange}
+                      placeholder="Enter target department"
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Form.Group className="mb-3">
+                <Form.Label>New Position (optional)</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="newPosition"
+                  value={fields.newPosition || ""}
+                  onChange={handleFieldChange}
+                  placeholder="Enter new position if applicable"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label>Reason for Transfer *</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  name="reason"
+                  value={fields.reason || ""}
+                  onChange={handleFieldChange}
+                  placeholder="Explain the reason for internal transfer..."
+                  required
                 />
               </Form.Group>
             </>
