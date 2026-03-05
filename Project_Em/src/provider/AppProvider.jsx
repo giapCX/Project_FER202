@@ -13,7 +13,6 @@ const AppProvider = ({ children }) => {
   const [employees, setEmployees] = useState([]);
   const [forms, setForms] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [requestApprovalSteps, setRequestApprovalSteps] = useState([]);
 
   const login = (userData) => {
     localStorage.setItem("user", JSON.stringify(userData));
@@ -25,65 +24,68 @@ const AppProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Fetch tất cả data ban đầu
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const [
-          rolesRes,
-          departmentsRes,
-          employeesRes,
-          formsRes,
-          requestsRes,
-          stepsRes,
-        ] = await Promise.all([
+      const [rolesRes, departmentsRes, employeesRes, formsRes, requestsRes] =
+        await Promise.all([
           axios.get("http://localhost:9999/roles"),
           axios.get("http://localhost:9999/departments"),
           axios.get("http://localhost:9999/employees"),
           axios.get("http://localhost:9999/forms"),
           axios.get("http://localhost:9999/requests"),
-          axios.get("http://localhost:9999/requestApprovalSteps"),
         ]);
 
-        setRoles(rolesRes.data);
-        setDepartments(departmentsRes.data);
-        setEmployees(employeesRes.data);
-        setForms(formsRes.data);
-        setRequests(requestsRes.data);
-        setRequestApprovalSteps(stepsRes.data);
-      } catch (error) {
-        console.error("Error loading data:", error);
-      }
+      setRoles(rolesRes.data);
+      setDepartments(departmentsRes.data);
+      setEmployees(employeesRes.data);
+      setForms(formsRes.data);
+      setRequests(requestsRes.data);
     };
 
     fetchData();
   }, []);
 
-  // Fetch employees riêng (đã có sẵn)
-  const fetchEmployees = async () => {
-    try {
-      const res = await axios.get("http://localhost:9999/employees");
-      setEmployees(res.data);
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-    }
-  };
-
-  // Fetch requests riêng (thêm mới để refresh sau khi tạo đơn)
   const fetchRequests = async () => {
-    try {
-      const res = await axios.get("http://localhost:9999/requests");
-      setRequests(res.data);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-    }
+    const res = await axios.get("http://localhost:9999/requests");
+    setRequests(res.data);
   };
 
-  // Hàm tạo request mới (đây là phần chính bạn cần)
-  const createRequest = async (formId, title, fields) => {
-    if (!user) {
-      throw new Error("Bạn chưa đăng nhập");
+  /* ================= APPROVAL ENGINE ================= */
+
+  const generateApprovalSteps = (formCode, fields) => {
+    const steps = [];
+
+    switch (formCode) {
+      case "leave_application":
+        steps.push(3, 4);
+        if (fields.leaveDays > 3) steps.push(6);
+        break;
+
+      case "expense_advance_request":
+        steps.push(3, 5);
+        if (fields.amount > 5000000) steps.push(6);
+        break;
+
+      case "internal_transfer_request":
+        steps.push(3, 4, 8);
+        break;
+
+      default:
+        break;
     }
+
+    return steps.map((roleId, index) => ({
+      stepOrder: index + 1,
+      approverRoleId: roleId,
+      status: index === 0 ? "pending" : "waiting",
+    }));
+  };
+
+  const createRequest = async (formId, title, fields) => {
+    if (!user) throw new Error("Chưa đăng nhập");
+
+    const form = forms.find((f) => f.id === formId);
+    const approvalSteps = generateApprovalSteps(form.code, fields);
 
     const newRequest = {
       formId,
@@ -91,68 +93,63 @@ const AppProvider = ({ children }) => {
       creatorId: user.id,
       departmentId: user.departmentId,
       status: "inprogress",
-      fields, // object chứa các trường như leaveDays, fromDate, amount, purpose,...
+      fields,
+      requestApprovalSteps: approvalSteps,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    try {
-      const response = await axios.post(
-        "http://localhost:9999/requests",
-        newRequest,
-      );
-      // Refresh danh sách requests để Dashboard cập nhật ngay
-      await fetchRequests();
-      return response.data;
-    } catch (error) {
-      console.error("Lỗi khi tạo đơn:", error);
-      throw error;
-    }
+    await axios.post("http://localhost:9999/requests", newRequest);
+    await fetchRequests();
   };
 
-  const addEmployee = async (newEmployee) => {
-    try {
-      const res = await axios.post(
-        "http://localhost:9999/employees",
-        newEmployee,
-      );
-      setEmployees([...employees, res.data]);
-      return res.data;
-    } catch (error) {
-      console.error("Error adding employee:", error);
-      throw error;
-    }
+  const approveRequest = async (request) => {
+    const steps = request.requestApprovalSteps.map((step) => {
+      if (step.approverRoleId === user.roleId && step.status === "pending") {
+        return { ...step, status: "approved" };
+      }
+      return step;
+    });
+
+    const nextStep = steps.find((s) => s.status === "waiting");
+    if (nextStep) nextStep.status = "pending";
+
+    const allApproved = steps.every((s) => s.status === "approved");
+
+    const updatedRequest = {
+      ...request,
+      requestApprovalSteps: steps,
+      status: allApproved ? "finish" : "inprogress",
+      updatedAt: new Date().toISOString(),
+    };
+
+    await axios.put(
+      `http://localhost:9999/requests/${request.id}`,
+      updatedRequest,
+    );
+
+    await fetchRequests();
   };
 
-  const updateEmployee = async (id, updatedData) => {
-    try {
-      const res = await axios.put(
-        `http://localhost:9999/employees/${id}`,
-        updatedData,
-      );
-      setEmployees(employees.map((emp) => (emp.id === id ? res.data : emp)));
-      return res.data;
-    } catch (error) {
-      console.error("Error updating employee:", error);
-      throw error;
-    }
-  };
+  const rejectRequest = async (request) => {
+    const updatedRequest = {
+      ...request,
+      status: "reject",
+      updatedAt: new Date().toISOString(),
+    };
 
-  const deleteEmployee = async (id) => {
-    try {
-      await axios.delete(`http://localhost:9999/employees/${id}`);
-      setEmployees(employees.filter((emp) => emp.id !== id));
-    } catch (error) {
-      console.error("Error deleting employee:", error);
-      throw error;
-    }
+    await axios.put(
+      `http://localhost:9999/requests/${request.id}`,
+      updatedRequest,
+    );
+
+    await fetchRequests();
   };
 
   return (
     <AppContext.Provider
       value={{
         user,
-        setUser,
         login,
         logout,
         roles,
@@ -160,13 +157,9 @@ const AppProvider = ({ children }) => {
         employees,
         forms,
         requests,
-        requestApprovalSteps,
-        fetchEmployees,
-        fetchRequests, // thêm để dùng ở nơi khác nếu cần
-        addEmployee,
-        updateEmployee,
-        deleteEmployee,
-        createRequest, // thêm hàm tạo đơn
+        createRequest,
+        approveRequest,
+        rejectRequest,
       }}
     >
       {children}
@@ -175,5 +168,4 @@ const AppProvider = ({ children }) => {
 };
 
 export const useAppContext = () => useContext(AppContext);
-
 export default AppProvider;
