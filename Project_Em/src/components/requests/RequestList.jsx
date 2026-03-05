@@ -1,36 +1,66 @@
+import { useState } from "react";
 import { useAppContext } from "../../provider/AppProvider";
-import { Card, Row, Col } from "react-bootstrap";
+import { Table, Button, Form } from "react-bootstrap";
 
 function RequestList() {
-
   const { requests, forms } = useAppContext();
+  const [selectedForm, setSelectedForm] = useState("");
+
+  const filteredRequests = requests.filter((req) => {
+    if (!selectedForm) return true;
+    return String(req.formId) === String(selectedForm);
+  });
 
   return (
-    <Row>
-      {requests.map((req)=>{
+    <>
+      {/* FILTER */}
+      <Form.Group className="mb-3 w-25">
+        <Form.Label>Lọc theo loại đơn</Form.Label>
+        <Form.Select
+          value={selectedForm}
+          onChange={(e) => setSelectedForm(e.target.value)}
+        >
+          <option value="">Tất cả</option>
 
-        const form = forms.find(f=>f.id === req.formId);
+          {forms.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </Form.Select>
+      </Form.Group>
 
-        return (
-          <Col md={4} key={req.id} className="mb-3">
+      {/* TABLE */}
+      <Table striped bordered hover>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Form</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
 
-            <Card>
-              <Card.Body>
+        <tbody>
+          {filteredRequests.map((req) => {
+            const form = forms.find(
+              (f) => String(f.id) === String(req.formId)
+            );
 
-                <Card.Title>{req.title}</Card.Title>
-
-                <p>{form?.name}</p>
-
-                <p>Status: {req.status}</p>
-
-              </Card.Body>
-            </Card>
-
-          </Col>
-        )
-
-      })}
-    </Row>
+            return (
+              <tr key={req.id}>
+                <td>{req.title}</td>
+                <td>{form?.name}</td>
+                <td>{req.status}</td>
+                <td>
+                  <Button size="sm">View</Button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </Table>
+    </>
   );
 }
 
