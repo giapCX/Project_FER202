@@ -93,9 +93,7 @@ function RequestList() {
               <td>{req.status}</td>
 
               <td>
-                <Button variant="success" onClick={handleExport}>
-                  Export PDF
-                </Button>
+
                 <Button
                   size="sm"
                   variant="primary"
@@ -149,6 +147,9 @@ function RequestList() {
         </Modal.Body>
 
         <Modal.Footer>
+          <Button variant="success" onClick={handleExport}>
+            Export PDF
+          </Button>
           <Button variant="secondary" onClick={handleClose}>
             Close
           </Button>
