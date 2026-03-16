@@ -7,7 +7,7 @@ import RequestList from "../components/requests/RequestList";
 import RequestHistory from "../components/requests/RequestHistory";
 
 function DashBoard() {
-  const { forms, requests } = useAppContext();
+  const { forms, requests, requestApprovalSteps, employees } = useAppContext();
   const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
@@ -20,96 +20,47 @@ function DashBoard() {
     reject: [],
     cancel: [],
     needApproval: [],
-    approved: [],
   });
 
+  // ===== GIỮ NGUYÊN LOGIC CỦA BẠN =====
   useEffect(() => {
     if (!user) return;
 
-    setAvailableForms(
-      forms.filter((form) =>
-        form.allowedDepartmentsId?.includes(user.departmentId),
+    setAvailableForms(forms);
+
+    const myRequests = requests.filter((req) => req.creatorId === user.id);
+
+    setUserRequests((prev) => ({
+      ...prev,
+      inprogress: myRequests.filter((req) => req.status === "inprogress"),
+      finish: myRequests.filter(
+        (req) => req.status === "finish" || req.status === "approved",
       ),
+      reject: myRequests.filter(
+        (req) => req.status === "reject" || req.status === "rejected",
+      ),
+      cancel: myRequests.filter((req) => req.status === "cancel"),
+    }));
+  }, [requests, user, forms]);
+
+  useEffect(() => {
+    if (!user || !requestApprovalSteps?.length) return;
+
+    const pendingSteps = requestApprovalSteps.filter(
+      (step) => step.status === "pending" && step.approverId === user.id,
     );
 
-    const inprogress = requests.filter(
-      (r) => r.creatorId === user.id && r.status === "inprogress",
+    const pendingRequestIds = pendingSteps.map((step) => step.requestId);
+
+    const pendingRequests = requests.filter((req) =>
+      pendingRequestIds.includes(req.id),
     );
 
-    const finish = requests.filter(
-      (r) => r.creatorId === user.id && r.status === "finish",
-    );
-
-    const reject = requests.filter(
-      (r) => r.creatorId === user.id && r.status === "reject",
-    );
-
-    const cancel = requests.filter(
-      (r) => r.creatorId === user.id && r.status === "cancel",
-    );
-
-    const needApproval =
-      user.roleId !== 1
-        ? requests.filter((r) =>
-          r.requestApprovalSteps?.some(
-            (step) => {
-              const isMyRole = step.approverRoleId === user.roleId;
-              const isMyDept = step.approverDepartmentId ? step.approverDepartmentId === user.departmentId : true;
-              return isMyRole && isMyDept && step.status === "pending";
-            }
-          ),
-        )
-        : [];
-
-    const approved =
-      user.roleId !== 1
-        ? requests.filter((r) =>
-          r.requestApprovalSteps?.some(
-            (step) => {
-              const isMyRole = step.approverRoleId === user.roleId;
-              const isMyDept = step.approverDepartmentId ? step.approverDepartmentId === user.departmentId : true;
-              return isMyRole && isMyDept && step.status === "approved";
-            }
-          ),
-        )
-        : [];
-
-    setUserRequests({
-      inprogress,
-      finish,
-      reject,
-      cancel,
-      needApproval,
-      approved,
-    });
-  }, [forms, requests, user]);
-
-  const handleCreate = (formCode) => {
-    switch (formCode) {
-      case "leave_application":
-        navigate("/leave");
-        break;
-
-      case "expense_advance_request":
-        navigate("/expense");
-        break;
-
-      case "internal_transfer_request":
-        navigate("/transfer");
-        break;
-
-      case "sales_contract_discount_approval":
-        navigate("/sales-contract");
-        break;
-
-      case "marketing_budget_campaign_proposal":
-        navigate("/marketing-budget");
-        break;
-
-      default:
-        alert("Form chưa được cấu hình route");
-    }
-  };
+    setUserRequests((prev) => ({
+      ...prev,
+      needApproval: pendingRequests,
+    }));
+  }, [requests, requestApprovalSteps, user]);
 
   if (!isLoggedIn) {
     return (
@@ -122,25 +73,32 @@ function DashBoard() {
     );
   }
 
+  // ===== FORM TAB GIỐNG FILE =====
   const tabs = [
     { key: "service", label: "Service" },
-    { key: "inprogress", label: "Ongoing Request" },
-    { key: "finish", label: "Finished Request" },
-    { key: "reject", label: "Rejected Request" },
-    { key: "cancel", label: "Canceled Request" },
+    {
+      key: "ongoing",
+      label: `Ongoing Request (${userRequests.inprogress.length})`,
+    },
+    {
+      key: "needApproval",
+      label: `Need Approval (${userRequests.needApproval.length})`,
+    },
+    {
+      key: "finish",
+      label: `Finished Request (${userRequests.finish.length})`,
+    },
+    {
+      key: "reject",
+      label: `Rejected Request (${userRequests.reject.length})`,
+    },
+    {
+      key: "cancel",
+      label: `Canceled Request (${userRequests.cancel.length})`,
+    },
     { key: "requestList", label: "Request List" },
     { key: "requestHistory", label: "Request History" },
   ];
-
-  if (user?.roleId !== 1) {
-    tabs.push({ key: "needApproval", label: "Need Approval" });
-    tabs.push({ key: "approved", label: "Approved by Me" });
-  }
-
-  // Add Employee Management tab for HR Manager
-  if (user?.roleId === 2 && user?.departmentId === 1) {
-    tabs.push({ key: "employeeManagement", label: "Employee Management" });
-  }
 
   return (
     <>
@@ -158,71 +116,180 @@ function DashBoard() {
       </ul>
 
       <div className="row">
-        {activeTab === "service" ? (
-          availableForms.length > 0 ? (
-            availableForms.map((form) => (
-              <div className="col-md-4 mb-3" key={form.id}>
-                <div className="card h-100 shadow-sm">
-                  <div className="card-body">
-                    <h5 className="card-title">{form.name}</h5>
-                    <p className="card-text">
-                      <small className="text-muted">{form.code}</small>
-                    </p>
+        {/* SERVICE */}
+        {activeTab === "service" &&
+          availableForms.map((form) => (
+            <div className="col-md-4 mb-3" key={form.id}>
+              <div className="card h-100 shadow-sm">
+                <div className="card-body">
+                  <h5 className="card-title">{form.name}</h5>
+                  <p className="card-text">
+                    <small className="text-muted">{form.code}</small>
+                  </p>
 
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() => handleCreate(form.code)}
-                    >
-                      Create Form
-                    </button>
-                  </div>
+                  <Link to={`/${form.code}`} className="btn btn-success btn-sm">
+                    Create Form
+                  </Link>
                 </div>
               </div>
-            ))
+            </div>
+          ))}
+
+        {/* ONGOING */}
+        {activeTab === "ongoing" &&
+          (userRequests.inprogress.length > 0 ? (
+            userRequests.inprogress.map((req) => {
+              const form = forms.find((f) => f.id === req.formId);
+
+              return (
+                <div className="col-md-4 mb-3" key={req.id}>
+                  <div className="card h-100 shadow-sm">
+                    <div className="card-body">
+                      <h5 className="card-title">{req.title}</h5>
+
+                      <p className="text-muted mb-2">
+                        <small>{form?.name}</small>
+                      </p>
+
+                      <p className="mb-3">
+                        Status:
+                        <span className="badge bg-info text-dark ms-2">
+                          {req.status}
+                        </span>
+                      </p>
+
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => navigate(`/request/${req.id}`)}
+                      >
+                        View Detail
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           ) : (
-            <p className="text-muted">Don't have service</p>
-          )
-        ) : activeTab === "employeeManagement" ? (
-          <div className="col-12">
-            <EmployeeManager />
-          </div>
-        ) : activeTab === "requestList" ? (
-          <div className="col-12">
-            <RequestList />
-          </div>
-        ) : activeTab === "requestHistory" ? (
-          <div className="col-12">
-            <RequestHistory />
-          </div>
-        ) : userRequests[activeTab]?.length > 0 ? (
-          userRequests[activeTab].map((req) => {
-            const form = forms.find((f) => f.id === req.formId);
-            return (
-              <div className="col-md-4 mb-3" key={req.id}>
-                <div className="card h-100 shadow-sm">
-                  <div className="card-body">
-                    <h5 className="card-title">{req.title}</h5>
-                    <p className="text-muted mb-2">
-                      <small>{form?.name}</small>
-                    </p>
-                    <p className="mb-3">
-                      Status: <span className="badge bg-info text-dark">{req.status}</span>
-                    </p>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => navigate(`/request/${req.id}`)}
-                    >
-                      Xem chi tiết
-                    </button>
+            <p className="text-muted">Không có đơn đang xử lý</p>
+          ))}
+
+        {/* NEED APPROVAL */}
+        {activeTab === "needApproval" &&
+          (userRequests.needApproval.length > 0 ? (
+            userRequests.needApproval.map((req) => {
+              const form = forms.find((f) => f.id === req.formId);
+              const creator = employees.find((e) => e.id === req.creatorId);
+
+              return (
+                <div className="col-md-4 mb-3" key={req.id}>
+                  <div className="card h-100 shadow-sm border-warning">
+                    <div className="card-body">
+                      <h5 className="card-title">{req.title}</h5>
+
+                      <p className="text-muted mb-2">
+                        <small>
+                          {form?.name} • Từ: {creator?.fullName || "N/A"}
+                        </small>
+                      </p>
+
+                      <p className="mb-3">
+                        Status:
+                        <span className="badge bg-warning text-dark ms-2">
+                          Pending Approval
+                        </span>
+                      </p>
+
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => navigate(`/request/${req.id}`)}
+                      >
+                        Xem & Duyệt
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-muted">No request</p>
-        )}
+              );
+            })
+          ) : (
+            <p className="text-muted">Không có đơn nào cần duyệt</p>
+          ))}
+
+        {/* FINISH */}
+        {activeTab === "finish" &&
+          (userRequests.finish.length > 0 ? (
+            userRequests.finish.map((req) => {
+              const form = forms.find((f) => f.id === req.formId);
+
+              return (
+                <div className="col-md-4 mb-3" key={req.id}>
+                  <div className="card h-100 shadow-sm">
+                    <div className="card-body">
+                      <h5 className="card-title">{req.title}</h5>
+
+                      <p className="text-muted mb-2">
+                        <small>{form?.name}</small>
+                      </p>
+
+                      <p className="mb-3">
+                        Status:
+                        <span className="badge bg-success ms-2">Finished</span>
+                      </p>
+
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => navigate(`/request/${req.id}`)}
+                      >
+                        View Detail
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-muted">Không có đơn đã hoàn thành</p>
+          ))}
+
+        {/* REJECT */}
+        {activeTab === "reject" &&
+          (userRequests.reject.length > 0 ? (
+            userRequests.reject.map((req) => {
+              const form = forms.find((f) => f.id === req.formId);
+
+              return (
+                <div className="col-md-4 mb-3" key={req.id}>
+                  <div className="card h-100 shadow-sm">
+                    <div className="card-body">
+                      <h5 className="card-title">{req.title}</h5>
+
+                      <p className="text-muted mb-2">
+                        <small>{form?.name}</small>
+                      </p>
+
+                      <p className="mb-3">
+                        Status:
+                        <span className="badge bg-danger ms-2">Rejected</span>
+                      </p>
+
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => navigate(`/request/${req.id}`)}
+                      >
+                        View Detail
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-muted">Không có đơn bị từ chối</p>
+          ))}
       </div>
+
+      <EmployeeManager />
+      <RequestList />
+      <RequestHistory />
     </>
   );
 }

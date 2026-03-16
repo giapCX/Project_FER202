@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Form, Button, Alert, ListGroup } from "react-bootstrap";
+import { Card, Form, Button, Alert } from "react-bootstrap";
 import { useAppContext } from "../../provider/AppProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -30,13 +30,6 @@ function LeaveRequestForm() {
     setAttachments((prev) => [...new Set([...prev, ...fileNames])]);
   };
 
-  const calculateLeaveDays = () => {
-    if (!startDate || !endDate) return 0;
-    const diff =
-      (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24);
-    return diff >= 0 ? diff + 1 : 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -45,57 +38,69 @@ function LeaveRequestForm() {
       return;
     }
 
-    const leaveDays = calculateLeaveDays();
-    if (leaveDays <= 0) {
-      setError("Ngày nghỉ không hợp lệ");
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end < start) {
+      setError("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu");
       return;
     }
 
-    await createRequest(1, title, {
-      startDate,
-      endDate,
-      leaveDays,
-      reason,
-      attachments,
-    });
+    // Tính số ngày nghỉ (bao gồm cả ngày đầu và cuối)
+    const diffTime = Math.abs(end - start);
+    const leaveDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-    alert("Tạo đơn thành công");
-    navigate("/dashboard");
+    try {
+      await createRequest(1, title, {
+        startDate,
+        endDate,
+        leaveDays, // Quan trọng: gửi leaveDays để lọc bước duyệt
+        reason,
+        attachments,
+      });
+
+      alert("Tạo đơn nghỉ phép thành công!");
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Lỗi khi tạo đơn: " + (err.message || "Không tạo được"));
+    }
   };
 
   return (
     <Card className="mt-4 shadow-sm">
-      <Card.Header className="bg-success text-white">
-        Leave Application
+      <Card.Header className="bg-primary text-white">
+        Đơn xin nghỉ phép
       </Card.Header>
-
       <Card.Body>
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">
-            <Form.Label>Tiêu đề *</Form.Label>
+            <Form.Label>Tiêu đề đơn *</Form.Label>
             <Form.Control
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
             />
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label>Ngày bắt đầu *</Form.Label>
+            <Form.Label>Từ ngày *</Form.Label>
             <Form.Control
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              required
             />
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label>Ngày kết thúc *</Form.Label>
+            <Form.Label>Đến ngày *</Form.Label>
             <Form.Control
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              required
             />
           </Form.Group>
 
@@ -106,6 +111,7 @@ function LeaveRequestForm() {
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+              required
             />
           </Form.Group>
 

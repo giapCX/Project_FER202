@@ -26,170 +26,45 @@ const AppProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [rolesRes, departmentsRes, employeesRes, formsRes, requestsRes] =
-        await Promise.all([
-          axios.get("http://localhost:9999/roles"),
-          axios.get("http://localhost:9999/departments"),
-          axios.get("http://localhost:9999/employees"),
-          axios.get("http://localhost:9999/forms"),
-          axios.get("http://localhost:9999/requests"),
-        ]);
+      try {
+        const [rolesRes, departmentsRes, employeesRes, formsRes, requestsRes] =
+          await Promise.all([
+            axios.get("http://localhost:9999/roles"),
+            axios.get("http://localhost:9999/departments"),
+            axios.get("http://localhost:9999/employees"),
+            axios.get("http://localhost:9999/forms"),
+            axios.get("http://localhost:9999/requests"),
+          ]);
 
-      setRoles(rolesRes.data);
-      setDepartments(departmentsRes.data);
-      setEmployees(employeesRes.data);
-      setForms(formsRes.data);
-      setRequests(requestsRes.data);
+        setRoles(rolesRes.data);
+        setDepartments(departmentsRes.data);
+        setEmployees(employeesRes.data);
+        setForms(formsRes.data);
+        setRequests(requestsRes.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     };
 
     fetchData();
   }, []);
 
   const fetchRequests = async () => {
-    const res = await axios.get("http://localhost:9999/requests");
-    setRequests(res.data);
-  };
-
-  /* ================= APPROVAL ENGINE ================= */
-
-  const generateApprovalSteps = (formCode, fields) => {
-    const steps = [];
-
-    switch (formCode) {
-      case "leave_application":
-        // 1. Manager (cùng phòng người tạo)
-        steps.push({ roleId: 2, departmentId: user.departmentId });
-        // 2. HR Manager (role 2, dept 1 - HR)
-        steps.push({ roleId: 2, departmentId: 1 });
-        // 3. General Manager (nếu nghỉ > 3 ngày)
-        if (fields.leaveDays > 3) steps.push({ roleId: 3 });
-        break;
-
-      case "expense_advance_request":
-        // 1. Manager (cùng phòng người tạo)
-        steps.push({ roleId: 2, departmentId: user.departmentId });
-        // 2. Manager AF (role 2, dept 2 - AF)
-        steps.push({ roleId: 2, departmentId: 2 });
-        // 3. General Manager (nếu > 5tr)
-        if (fields.amount > 5000000) steps.push({ roleId: 3 });
-        break;
-
-      case "internal_transfer_request":
-        // 1. Manager (cùng phòng người tạo)
-        steps.push({ roleId: 2, departmentId: user.departmentId });
-        // 2. HR Manager (role 2, dept 1 - HR)
-        steps.push({ roleId: 2, departmentId: 1 });
-        // 3. Deputy General Director (role 4)
-        steps.push({ roleId: 4 });
-        break;
-
-      case "sales_contract_discount_approval":
-        // 1. Manager SA (Role 2, Dept 3 - SA)
-        steps.push({ roleId: 2, departmentId: 3 });
-        // 2. General Manager
-        steps.push({ roleId: 3 });
-        // 3. General Director (nếu giảm > 10%)
-        if (fields.discount > 10) {
-          steps.push({ roleId: 5 });
-        }
-        break;
-
-      case "marketing_budget_campaign_proposal":
-        // 1. Manager MK (Role 2, Dept 4 - Marketing)
-        steps.push({ roleId: 2, departmentId: 4 });
-        // 2. Manager AF (Role 2, Dept 2 - Accounting & Finance)
-        steps.push({ roleId: 2, departmentId: 2 });
-        // 3. Deputy General Director (nếu ngân sách > 10tr)
-        if (fields.budget > 10000000) {
-          steps.push({ roleId: 4 });
-        }
-        break;
-
-      default:
-        break;
+    try {
+      const res = await axios.get("http://localhost:9999/requests");
+      setRequests(res.data);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
     }
-
-    return steps.map((stepConfig, index) => ({
-      stepOrder: index + 1,
-      approverRoleId: stepConfig.roleId,
-      approverDepartmentId: stepConfig.departmentId || null,
-      status: index === 0 ? "pending" : "waiting",
-    }));
   };
-
-  const createRequest = async (formId, title, fields) => {
-    if (!user) throw new Error("Chưa đăng nhập");
-
-    const form = forms.find((f) => f.id === formId);
-    const approvalSteps = generateApprovalSteps(form.code, fields);
-
-    const newRequest = {
-      formId,
-      title,
-      creatorId: user.id,
-      departmentId: user.departmentId,
-      status: "inprogress",
-      fields,
-      requestApprovalSteps: approvalSteps,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await axios.post("http://localhost:9999/requests", newRequest);
-    await fetchRequests();
-  };
-
-  const approveRequest = async (request) => {
-    const steps = request.requestApprovalSteps.map((step) => {
-      const isMyRole = step.approverRoleId === user.roleId;
-      const isMyDept = step.approverDepartmentId ? step.approverDepartmentId === user.departmentId : true;
-
-      if (isMyRole && isMyDept && step.status === "pending") {
-        return { ...step, status: "approved" };
-      }
-      return step;
-    });
-
-    const nextStep = steps.find((s) => s.status === "waiting");
-    if (nextStep) nextStep.status = "pending";
-
-    const allApproved = steps.every((s) => s.status === "approved");
-
-    const updatedRequest = {
-      ...request,
-      requestApprovalSteps: steps,
-      status: allApproved ? "finish" : "inprogress",
-      updatedAt: new Date().toISOString(),
-    };
-
-    await axios.put(
-      `http://localhost:9999/requests/${request.id}`,
-      updatedRequest,
-    );
-
-    await fetchRequests();
-  };
-
-  const rejectRequest = async (request) => {
-    const updatedRequest = {
-      ...request,
-      status: "reject",
-      updatedAt: new Date().toISOString(),
-    };
-
-    await axios.put(
-      `http://localhost:9999/requests/${request.id}`,
-      updatedRequest,
-    );
-
-    await fetchRequests();
-  };
-
-  /* ================= EMPLOYEE MANAGEMENT ================= */
 
   const fetchEmployees = async () => {
-    const res = await axios.get("http://localhost:9999/employees");
-    setEmployees(res.data);
+    try {
+      const res = await axios.get("http://localhost:9999/employees");
+      setEmployees(res.data);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+    }
   };
 
   const addEmployee = async (employeeData) => {
@@ -207,6 +82,93 @@ const AppProvider = ({ children }) => {
     await fetchEmployees();
   };
 
+  // ───────────────────────────────────────────────────────────────
+  // HÀM TẠO ĐƠN - CHỈ THÊM LOGIC ĐIỀU KIỆN CHO ĐƠN NGHỈ PHÉP
+  // ───────────────────────────────────────────────────────────────
+  const createRequest = async (formId, title, fields) => {
+    if (!user) throw new Error("Bạn chưa đăng nhập");
+
+    const form = forms.find((f) => f.id === formId);
+    if (!form) throw new Error("Form không tồn tại");
+
+    // Tạo request mới
+    const requestPayload = {
+      formId,
+      title,
+      creatorId: user.id,
+      departmentId: user.departmentId,
+      status: "inprogress",
+      fields,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const requestRes = await axios.post(
+      "http://localhost:9999/requests",
+      requestPayload,
+    );
+    const createdRequest = requestRes.data;
+
+    // Lấy danh sách bước duyệt từ form.workflowSteps
+    let approvalSteps = [...(form.workflowSteps || [])];
+
+    // CHỈ ÁP DỤNG CHO ĐƠN NGHỈ PHÉP
+    if (form.code === "leave_application") {
+      const leaveDays = Number(fields.leaveDays) || 0;
+
+      // Nếu nghỉ ≤ 3 ngày → loại bỏ bước General Manager
+      if (leaveDays <= 3) {
+        approvalSteps = approvalSteps.filter(
+          (step) =>
+            !step.condition || !step.condition.includes("leave_days > 3"),
+        );
+      }
+      // Nếu > 3 ngày → giữ nguyên tất cả bước
+    }
+
+    // Tạo từng approval step
+    for (const step of approvalSteps) {
+      let approverId = null;
+
+      // Bước 1: Trưởng phòng (manager cùng phòng)
+      if (step.step === 1 && step.roleId === 2) {
+        const deptManager = employees.find(
+          (e) => e.departmentId === user.departmentId && e.roleId === 2,
+        );
+        approverId = deptManager?.id;
+      }
+
+      // Bước 2: HR Manager (departmentId=1, roleId=2)
+      if (step.step === 2 && step.roleId === 2 && step.departmentId === 1) {
+        const hrManager = employees.find(
+          (e) => e.departmentId === 1 && e.roleId === 2,
+        );
+        approverId = hrManager?.id;
+      }
+
+      // Bước 3: General Manager (roleId=3)
+      if (step.step === 3 && step.roleId === 3) {
+        const gm = employees.find((e) => e.roleId === 3);
+        approverId = gm?.id;
+      }
+
+      if (approverId) {
+        await axios.post("http://localhost:9999/requestApprovalSteps", {
+          requestId: createdRequest.id,
+          step: step.step,
+          approverId,
+          status: "pending",
+          comment: "",
+        });
+      }
+    }
+
+    // Refresh danh sách requests
+    await fetchRequests();
+
+    return createdRequest;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -219,12 +181,11 @@ const AppProvider = ({ children }) => {
         forms,
         requests,
         createRequest,
-        approveRequest,
-        rejectRequest,
         addEmployee,
         updateEmployee,
         deleteEmployee,
         fetchRequests,
+        fetchEmployees,
       }}
     >
       {children}
