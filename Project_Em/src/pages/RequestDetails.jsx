@@ -6,9 +6,28 @@ import axios from "axios";
 function RequestDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { forms, user, approveRequest, rejectRequest, roles, departments } = useAppContext();
+    const { forms, user, approveRequest, rejectRequest, roles, departments, fetchRequests } = useAppContext();
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const cancelRequest = async () => {
+        if (window.confirm("Bạn có chắc muốn hủy đơn này?")) {
+            try {
+                const updatedRequest = {
+                    ...request,
+                    status: "cancel",
+                    updatedAt: new Date().toISOString(),
+                };
+                await axios.put(`http://localhost:9999/requests/${request.id}`, updatedRequest);
+                await fetchRequests(); // Refresh requests in context
+                alert("Đã hủy đơn thành công");
+                navigate("/dashboard");
+            } catch (err) {
+                console.error(err);
+                alert("Có lỗi xảy ra khi hủy đơn");
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchRequest = async () => {
@@ -38,6 +57,10 @@ function RequestDetails() {
             return isMyRole && isMyDept && step.status === "pending";
         }
     );
+
+    // Check if current user is the creator and request is not finished
+    const isCreator = request.creatorId === user?.id;
+    const canCancel = isCreator && request.status !== "finish" && request.status !== "cancel" && request.status !== "reject";
 
     const handleApprove = async () => {
         if (isPendingForMe) {
@@ -82,30 +105,43 @@ function RequestDetails() {
                         let displayValue = value;
 
                         const labels = {
-                            customerName: "Tên khách hàng",
-                            contractValue: "Giá trị hợp đồng (VND)",
-                            discount: "Chiết khấu (%)",
-                            contractStartDate: "Ngày bắt đầu",
-                            contractEndDate: "Ngày kết thúc",
-                            notes: "Ghi chú",
-                            leaveDays: "Số ngày nghỉ",
-                            fromDate: "Từ ngày",
-                            toDate: "Đến ngày",
-                            reason: "Lý do",
-                            purpose: "Mục đích",
-                            amount: "Số tiền (VND)",
-                            note: "Ghi chú thêm",
-                            currentDepartment: "Phòng ban hiện tại",
-                            targetDepartment: "Phòng ban chuyển đến",
-                            newPosition: "Chức danh mới",
+                            customerName: "Tên Khách Hàng",
+                            contractValue: "Giá Trị Hợp Đồng (VND)",
+                            discount: "Chiết Khấu (%)",
+                            contractStartDate: "Ngày Bắt Đầu",
+                            contractEndDate: "Ngày Kết Thúc",
+                            notes: "Ghi Chú",
+                            leaveDays: "Số Ngày Nghỉ",
+                            leaveType: "Loại Nghỉ Phép",
+                            startDate: "Ngày Bắt Đầu",
+                            endDate: "Ngày Kết Thúc",
+                            fromDate: "Từ Ngày",
+                            toDate: "Đến Ngày",
+                            reason: "Lý Do",
+                            purpose: "Mục Đích",
+                            amount: "Số Tiền (VND)",
+                            currency: "Loại Tiền",
+                            expenseDate: "Ngày Chi Phí",
+                            note: "Ghi Chú Thêm",
+                            currentDepartment: "Phòng Ban Hiện Tại",
+                            targetDepartment: "Phòng Ban Chuyển Đến",
+                            newPosition: "Chức Danh Mới",
+                            campaignName: "Tên Chiến Dịch",
+                            budget: "Ngân Sách (VND)",
+                            expectedROI: "ROI Dự Kiến (%)",
+                            description: "Mô Tả Chiến Dịch",
+                            employeeToTransfer: "Nhân Viên Điều Chuyển",
+                            fromDepartment: "Từ Phòng Ban",
+                            toDepartment: "Đến Phòng Ban",
+                            transferDate: "Ngày Điều Chuyển",
                         };
                         if (labels[key]) displayKey = labels[key];
 
                         if (Array.isArray(value)) {
                             displayValue = value.join(", ");
-                        } else if (key === "contractValue" || key === "amount") {
+                        } else if (key === "contractValue" || key === "amount" || key === "budget") {
                             displayValue = Number(value).toLocaleString("vi-VN");
-                        } else if (key === "discount") {
+                        } else if (key === "discount" || key === "expectedROI") {
                             displayValue = `${value}%`;
                         } else {
                             displayValue = String(value);
@@ -194,6 +230,14 @@ function RequestDetails() {
                             })}
                         </ul>
                     </div>
+                </div>
+            )}
+
+            {canCancel && (
+                <div className="d-flex justify-content-end mb-3">
+                    <button className="btn btn-outline-danger px-4" onClick={cancelRequest}>
+                        Hủy đơn
+                    </button>
                 </div>
             )}
 

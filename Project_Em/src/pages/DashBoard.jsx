@@ -2,6 +2,7 @@ import { useAppContext } from "../provider/AppProvider";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import EmployeeManager from "../components/EmployeeManager";
 
 function DashBoard() {
   const { forms, requests } = useAppContext();
@@ -99,6 +100,10 @@ function DashBoard() {
         navigate("/sales-contract");
         break;
 
+      case "marketing_budget_campaign_proposal":
+        navigate("/marketing-budget");
+        break;
+
       default:
         alert("Form chưa được cấu hình route");
     }
@@ -126,6 +131,11 @@ function DashBoard() {
   if (user?.roleId !== 1) {
     tabs.push({ key: "needApproval", label: "Need Approval" });
     tabs.push({ key: "approved", label: "Approved by Me" });
+  }
+
+  // Add Employee Management tab for HR Manager
+  if (user?.roleId === 2 && user?.departmentId === 1) {
+    tabs.push({ key: "employeeManagement", label: "Employee Management" });
   }
 
   return (
@@ -168,6 +178,10 @@ function DashBoard() {
           ) : (
             <p className="text-muted">Don't have service</p>
           )
+        ) : activeTab === "employeeManagement" ? (
+          <div className="col-12">
+            <EmployeeManager />
+          </div>
         ) : userRequests[activeTab]?.length > 0 ? (
           userRequests[activeTab].map((req) => {
             const form = forms.find((f) => f.id === req.formId);

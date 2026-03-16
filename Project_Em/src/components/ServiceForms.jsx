@@ -5,6 +5,8 @@ import { useState } from "react";
 import ExpenseRequestForm from "./forms/ExpenseRequestForm";
 import LeaveRequestForm from "./forms/LeaveRequestForm";
 import InternalTransferForm from "./forms/InternalTransferForm";
+import SalesContractRequestForm from "./forms/SalesContractRequestForm";
+import MarketingBudgetRequestForm from "./forms/MarketingBudgetRequestForm";
 
 function ServiceForms() {
   const { forms } = useAppContext();
@@ -41,6 +43,14 @@ function ServiceForms() {
 
       {selectedForm?.code === "internal_transfer_request" && (
         <InternalTransferForm />
+      )}
+
+      {selectedForm?.code === "sales_contract_discount_approval" && (
+        <SalesContractRequestForm />
+      )}
+
+      {selectedForm?.code === "marketing_budget_campaign_proposal" && (
+        <MarketingBudgetRequestForm />
       )}
     </>
   );

@@ -94,6 +94,17 @@ const AppProvider = ({ children }) => {
         }
         break;
 
+      case "marketing_budget_campaign_proposal":
+        // 1. Manager MK (Role 2, Dept 4 - Marketing)
+        steps.push({ roleId: 2, departmentId: 4 });
+        // 2. Manager AF (Role 2, Dept 2 - Accounting & Finance)
+        steps.push({ roleId: 2, departmentId: 2 });
+        // 3. Deputy General Director (nếu ngân sách > 10tr)
+        if (fields.budget > 10000000) {
+          steps.push({ roleId: 4 });
+        }
+        break;
+
       default:
         break;
     }
@@ -174,6 +185,28 @@ const AppProvider = ({ children }) => {
     await fetchRequests();
   };
 
+  /* ================= EMPLOYEE MANAGEMENT ================= */
+
+  const fetchEmployees = async () => {
+    const res = await axios.get("http://localhost:9999/employees");
+    setEmployees(res.data);
+  };
+
+  const addEmployee = async (employeeData) => {
+    await axios.post("http://localhost:9999/employees", employeeData);
+    await fetchEmployees();
+  };
+
+  const updateEmployee = async (id, employeeData) => {
+    await axios.put(`http://localhost:9999/employees/${id}`, employeeData);
+    await fetchEmployees();
+  };
+
+  const deleteEmployee = async (id) => {
+    await axios.delete(`http://localhost:9999/employees/${id}`);
+    await fetchEmployees();
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -188,6 +221,10 @@ const AppProvider = ({ children }) => {
         createRequest,
         approveRequest,
         rejectRequest,
+        addEmployee,
+        updateEmployee,
+        deleteEmployee,
+        fetchRequests,
       }}
     >
       {children}

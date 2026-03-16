@@ -11,6 +11,7 @@ import LeaveRequestForm from "./components/forms/LeaveRequestForm";
 import ExpenseRequestForm from "./components/forms/ExpenseRequestForm";
 import InternalTransferForm from "./components/forms/InternalTransferForm";
 import SalesContractRequestForm from "./components/forms/SalesContractRequestForm";
+import MarketingBudgetRequestForm from "./components/forms/MarketingBudgetRequestForm";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/expense" element={<ExpenseRequestForm />} />
             <Route path="/transfer" element={<InternalTransferForm />} />
             <Route path="/sales-contract" element={<SalesContractRequestForm />} />
+            <Route path="/marketing-budget" element={<MarketingBudgetRequestForm />} />
             <Route path="/request/:id" element={<RequestDetails />} />
           </Route>
         </Routes>
