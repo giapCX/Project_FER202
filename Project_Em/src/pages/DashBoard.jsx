@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import EmployeeManager from "../components/EmployeeManager";
+import RequestList from "../components/requests/RequestList";
+import RequestHistory from "../components/requests/RequestHistory";
 
 function DashBoard() {
   const { forms, requests } = useAppContext();
@@ -126,6 +128,8 @@ function DashBoard() {
     { key: "finish", label: "Finished Request" },
     { key: "reject", label: "Rejected Request" },
     { key: "cancel", label: "Canceled Request" },
+    { key: "requestList", label: "Request List" },
+    { key: "requestHistory", label: "Request History" },
   ];
 
   if (user?.roleId !== 1) {
@@ -181,6 +185,14 @@ function DashBoard() {
         ) : activeTab === "employeeManagement" ? (
           <div className="col-12">
             <EmployeeManager />
+          </div>
+        ) : activeTab === "requestList" ? (
+          <div className="col-12">
+            <RequestList />
+          </div>
+        ) : activeTab === "requestHistory" ? (
+          <div className="col-12">
+            <RequestHistory />
           </div>
         ) : userRequests[activeTab]?.length > 0 ? (
           userRequests[activeTab].map((req) => {
