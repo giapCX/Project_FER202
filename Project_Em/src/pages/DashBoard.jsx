@@ -17,6 +17,7 @@ function DashBoard() {
     reject: [],
     cancel: [],
     needApproval: [],
+    approved: [],
   });
 
   useEffect(() => {
@@ -47,12 +48,27 @@ function DashBoard() {
     const needApproval =
       user.roleId !== 1
         ? requests.filter((r) =>
-            r.requestApprovalSteps?.some(
-              (step) =>
-                step.approverRoleId === user.roleId &&
-                step.status === "pending",
-            ),
-          )
+          r.requestApprovalSteps?.some(
+            (step) => {
+              const isMyRole = step.approverRoleId === user.roleId;
+              const isMyDept = step.approverDepartmentId ? step.approverDepartmentId === user.departmentId : true;
+              return isMyRole && isMyDept && step.status === "pending";
+            }
+          ),
+        )
+        : [];
+
+    const approved =
+      user.roleId !== 1
+        ? requests.filter((r) =>
+          r.requestApprovalSteps?.some(
+            (step) => {
+              const isMyRole = step.approverRoleId === user.roleId;
+              const isMyDept = step.approverDepartmentId ? step.approverDepartmentId === user.departmentId : true;
+              return isMyRole && isMyDept && step.status === "approved";
+            }
+          ),
+        )
         : [];
 
     setUserRequests({
@@ -61,6 +77,7 @@ function DashBoard() {
       reject,
       cancel,
       needApproval,
+      approved,
     });
   }, [forms, requests, user]);
 
@@ -76,6 +93,10 @@ function DashBoard() {
 
       case "internal_transfer_request":
         navigate("/transfer");
+        break;
+
+      case "sales_contract_discount_approval":
+        navigate("/sales-contract");
         break;
 
       default:
@@ -102,8 +123,10 @@ function DashBoard() {
     { key: "cancel", label: "Canceled Request" },
   ];
 
-  if (user?.roleId !== 1)
+  if (user?.roleId !== 1) {
     tabs.push({ key: "needApproval", label: "Need Approval" });
+    tabs.push({ key: "approved", label: "Approved by Me" });
+  }
 
   return (
     <>
@@ -146,18 +169,30 @@ function DashBoard() {
             <p className="text-muted">Don't have service</p>
           )
         ) : userRequests[activeTab]?.length > 0 ? (
-          userRequests[activeTab].map((req) => (
-            <div className="col-md-4 mb-3" key={req.id}>
-              <div className="card h-100 shadow-sm">
-                <div className="card-body">
-                  <h5 className="card-title">{req.title}</h5>
-                  <p>
-                    Status: <strong>{req.status}</strong>
-                  </p>
+          userRequests[activeTab].map((req) => {
+            const form = forms.find((f) => f.id === req.formId);
+            return (
+              <div className="col-md-4 mb-3" key={req.id}>
+                <div className="card h-100 shadow-sm">
+                  <div className="card-body">
+                    <h5 className="card-title">{req.title}</h5>
+                    <p className="text-muted mb-2">
+                      <small>{form?.name}</small>
+                    </p>
+                    <p className="mb-3">
+                      Status: <span className="badge bg-info text-dark">{req.status}</span>
+                    </p>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => navigate(`/request/${req.id}`)}
+                    >
+                      Xem chi tiết
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <p className="text-muted">No request</p>
         )}

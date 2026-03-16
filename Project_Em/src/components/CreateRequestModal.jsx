@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Form, Button, Row, Col, Alert } from "react-bootstrap";
 import { useAppContext } from "../provider/AppProvider";
+import SalesContractForm from "./forms/SalesContractForm";
 
 function CreateRequestModal({ show, onHide, selectedForm }) {
   const { createRequest, user } = useAppContext();
@@ -16,6 +17,7 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
   const isLeave = selectedForm.code === "leave_application";
   const isExpense = selectedForm.code === "expense_advance_request";
   const isInternalTransfer = selectedForm.code === "internal_transfer_request";
+  const isSalesContract = selectedForm.code === "sales_contract_discount_approval";
 
   const resetForm = () => {
     setTitle("");
@@ -105,6 +107,17 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
 
       if (fields.currentDepartment === fields.targetDepartment) {
         setError("Target department must be different from current department.");
+        return;
+      }
+    }
+
+    if (isSalesContract) {
+      if (!fields.customerName || !fields.contractValue || fields.discount === undefined || !fields.contractStartDate || !fields.contractEndDate) {
+        setError("Please fill in all required sales contract information.");
+        return;
+      }
+      if (fields.contractStartDate > fields.contractEndDate) {
+        setError("Contract start date cannot be after end date.");
         return;
       }
     }
@@ -306,6 +319,11 @@ function CreateRequestModal({ show, onHide, selectedForm }) {
                 />
               </Form.Group>
             </>
+          )}
+
+          {/* Fields cho hợp đồng bán hàng */}
+          {isSalesContract && (
+            <SalesContractForm fields={fields} onChange={handleFieldChange} />
           )}
 
           {/* Phần đính kèm file - chọn từ máy */}
