@@ -3,11 +3,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import EmployeeManager from "../components/EmployeeManager";
-import RequestList from "../components/requests/RequestList";
-import RequestHistory from "../components/requests/RequestHistory";
 
 function DashBoard() {
-  const { forms, requests, requestApprovalSteps } = useAppContext();
+  const { forms, requests } = useAppContext();
   const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
@@ -32,72 +30,80 @@ function DashBoard() {
       ),
     );
 
-    const myRequests = requests.filter((r) => r.creatorId === user.id);
-
-    const inprogress = myRequests.filter((r) => r.status === "inprogress");
-
-    const finish = myRequests.filter(
-      (r) => r.status === "finish" || r.status === "approved",
+    const inprogress = requests.filter(
+      (r) => r.creatorId === user.id && r.status === "inprogress",
     );
 
-    const reject = myRequests.filter(
-      (r) => r.status === "reject" || r.status === "rejected",
+    const finish = requests.filter(
+      (r) => r.creatorId === user.id && r.status === "finish",
     );
 
-    const cancel = myRequests.filter((r) => r.status === "cancel");
+    const reject = requests.filter(
+      (r) => r.creatorId === user.id && r.status === "reject",
+    );
 
-    setUserRequests((prev) => ({
-      ...prev,
+    const cancel = requests.filter(
+      (r) => r.creatorId === user.id && r.status === "cancel",
+    );
+
+    const needApproval =
+      user.roleId !== 1
+        ? requests.filter((r) =>
+            r.requestApprovalSteps?.some((step) => {
+              const isMyRole = step.approverRoleId === user.roleId;
+              const isMyDept = step.approverDepartmentId
+                ? step.approverDepartmentId === user.departmentId
+                : true;
+              return isMyRole && isMyDept && step.status === "pending";
+            }),
+          )
+        : [];
+
+    const approved =
+      user.roleId !== 1
+        ? requests.filter((r) =>
+            r.requestApprovalSteps?.some((step) => {
+              const isMyRole = step.approverRoleId === user.roleId;
+              const isMyDept = step.approverDepartmentId
+                ? step.approverDepartmentId === user.departmentId
+                : true;
+              return isMyRole && isMyDept && step.status === "approved";
+            }),
+          )
+        : [];
+
+    setUserRequests({
       inprogress,
       finish,
       reject,
       cancel,
-    }));
-  }, [forms, requests, user]);
-
-  useEffect(() => {
-    if (!user || !requestApprovalSteps?.length) return;
-
-    const pendingSteps = requestApprovalSteps.filter(
-      (step) => step.status === "pending" && step.approverId === user.id,
-    );
-
-    const pendingIds = pendingSteps.map((s) => s.requestId);
-
-    const needApproval = requests.filter((r) => pendingIds.includes(r.id));
-
-    const approvedSteps = requestApprovalSteps.filter(
-      (step) => step.status === "approved" && step.approverId === user.id,
-    );
-
-    const approvedIds = approvedSteps.map((s) => s.requestId);
-
-    const approved = requests.filter((r) => approvedIds.includes(r.id));
-
-    setUserRequests((prev) => ({
-      ...prev,
       needApproval,
       approved,
-    }));
-  }, [requests, requestApprovalSteps, user]);
+    });
+  }, [forms, requests, user]);
 
   const handleCreate = (formCode) => {
     switch (formCode) {
       case "leave_application":
         navigate("/leave");
         break;
+
       case "expense_advance_request":
         navigate("/expense");
         break;
+
       case "internal_transfer_request":
         navigate("/transfer");
         break;
+
       case "sales_contract_discount_approval":
         navigate("/sales-contract");
         break;
+
       case "marketing_budget_campaign_proposal":
         navigate("/marketing-budget");
         break;
+
       default:
         alert("Form chưa được cấu hình route");
     }
@@ -120,8 +126,6 @@ function DashBoard() {
     { key: "finish", label: "Finished Request" },
     { key: "reject", label: "Rejected Request" },
     { key: "cancel", label: "Canceled Request" },
-    { key: "requestList", label: "Request List" },
-    { key: "requestHistory", label: "Request History" },
   ];
 
   if (user?.roleId !== 1) {
@@ -129,6 +133,7 @@ function DashBoard() {
     tabs.push({ key: "approved", label: "Approved by Me" });
   }
 
+  // Add Employee Management tab for HR Manager
   if (user?.roleId === 2 && user?.departmentId === 1) {
     tabs.push({ key: "employeeManagement", label: "Employee Management" });
   }
@@ -176,14 +181,6 @@ function DashBoard() {
         ) : activeTab === "employeeManagement" ? (
           <div className="col-12">
             <EmployeeManager />
-          </div>
-        ) : activeTab === "requestList" ? (
-          <div className="col-12">
-            <RequestList />
-          </div>
-        ) : activeTab === "requestHistory" ? (
-          <div className="col-12">
-            <RequestHistory />
           </div>
         ) : userRequests[activeTab]?.length > 0 ? (
           userRequests[activeTab].map((req) => {
