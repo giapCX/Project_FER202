@@ -22,6 +22,20 @@ function DashBoard() {
     rejectedByMe: [],
   });
 
+  // ✅ ADD: chỉ lấy step pending hiện tại
+  const isMyCurrentStep = (steps, user) => {
+    const currentStep = steps.find((s) => s.status === "pending");
+
+    if (!currentStep) return false;
+
+    const isMyRole = currentStep.approverRoleId === user.roleId;
+    const isMyDept = currentStep.approverDepartmentId
+      ? currentStep.approverDepartmentId === user.departmentId
+      : true;
+
+    return isMyRole && isMyDept;
+  };
+
   useEffect(() => {
     if (!user) return;
 
@@ -47,16 +61,14 @@ function DashBoard() {
       (r) => r.creatorId === user.id && r.status === "cancel",
     );
 
+    // ✅ FIX CHUẨN NEED APPROVAL
     const needApproval =
       user.roleId !== 1
-        ? requests.filter((r) =>
-            r.status === "inprogress" && r.requestApprovalSteps?.some((step) => {
-              const isMyRole = step.approverRoleId === user.roleId;
-              const isMyDept = step.approverDepartmentId
-                ? step.approverDepartmentId === user.departmentId
-                : true;
-              return isMyRole && isMyDept && step.status === "pending";
-            }),
+        ? requests.filter(
+            (r) =>
+              r.status === "inprogress" &&
+              r.requestApprovalSteps &&
+              isMyCurrentStep(r.requestApprovalSteps, user),
           )
         : [];
 
@@ -81,7 +93,12 @@ function DashBoard() {
               const isMyDept = step.approverDepartmentId
                 ? step.approverDepartmentId === user.departmentId
                 : true;
-              return isMyRole && isMyDept && (step.status === "rejected" || (r.status === "reject" && step.status === "pending"));
+              return (
+                isMyRole &&
+                isMyDept &&
+                (step.status === "rejected" ||
+                  (r.status === "reject" && step.status === "pending"))
+              );
             }),
           )
         : [];
@@ -149,7 +166,6 @@ function DashBoard() {
     tabs.push({ key: "rejectedByMe", label: "Rejected by Me" });
   }
 
-  // Add Employee Management tab for HR Manager
   if (user?.roleId === 2 && user?.departmentId === 1) {
     tabs.push({ key: "employeeManagement", label: "Employee Management" });
   }
