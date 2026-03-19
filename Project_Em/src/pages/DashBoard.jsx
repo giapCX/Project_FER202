@@ -97,8 +97,7 @@ function DashBoard() {
               return (
                 isMyRole &&
                 isMyDept &&
-                (step.status === "rejected" ||
-                  (r.status === "reject" && step.status === "pending"))
+                (step.status === "reject" || step.status === "rejected")
               );
             }),
           )
