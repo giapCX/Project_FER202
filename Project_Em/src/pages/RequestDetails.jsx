@@ -18,6 +18,53 @@ function RequestDetails() {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const normalizeInternalTransferRequest = (data) => {
+    if (
+      data?.formId !== 5 ||
+      (Array.isArray(data?.requestApprovalSteps) && data.requestApprovalSteps.length >= 4)
+    ) {
+      return data;
+    }
+
+    const existing = Array.isArray(data?.requestApprovalSteps)
+      ? data.requestApprovalSteps
+      : [];
+
+    const base = [
+      {
+        stepOrder: 1,
+        approverRoleId: 2,
+        approverDepartmentId: data.departmentId ?? null,
+      },
+      { stepOrder: 2, approverRoleId: 2, approverDepartmentId: 1 },
+      { stepOrder: 3, approverRoleId: 4, approverDepartmentId: null },
+      { stepOrder: 4, approverRoleId: 2, approverDepartmentId: 1 },
+    ];
+
+    const merged = base.map((b) => {
+      const match = existing.find((s) => {
+        const sameRole = Number(s.approverRoleId) === Number(b.approverRoleId);
+        const sameDept =
+          (s.approverDepartmentId ?? null) === (b.approverDepartmentId ?? null);
+        const sameOrder = s.stepOrder
+          ? Number(s.stepOrder) === Number(b.stepOrder)
+          : true;
+        return sameRole && sameDept && sameOrder;
+      });
+      return { ...b, status: match?.status };
+    });
+
+    const hasPending = merged.some((s) => s.status === "pending");
+    return {
+      ...data,
+      requestApprovalSteps: merged.map((s, idx) => ({
+        ...s,
+        status:
+          s.status || (hasPending ? "waiting" : idx === 0 ? "pending" : "waiting"),
+      })),
+    };
+  };
+
   const cancelRequest = async () => {
     if (window.confirm("Bạn có chắc muốn hủy đơn này?")) {
       try {
@@ -44,7 +91,7 @@ function RequestDetails() {
     const fetchRequest = async () => {
       try {
         const res = await axios.get(`http://localhost:9999/requests/${id}`);
-        setRequest(res.data);
+        setRequest(normalizeInternalTransferRequest(res.data));
         console.log("Fetched request:", res.data);
       } catch (err) {
         console.error(err);
@@ -63,12 +110,95 @@ function RequestDetails() {
     );
 
   const form = forms.find((f) => f.id === request.formId);
+  const isInternalTransfer =
+    form?.code === "internal_transfer_request" || request.formId === 5;
+  const isHrManager = user?.roleId === 2 && user?.departmentId === 1;
+  const canExecuteInternalTransfer =
+    isInternalTransfer &&
+    request.status === "finish" &&
+    isHrManager &&
+    !request?.executedAt;
+
+  const executeInternalTransfer = async () => {
+    if (!canExecuteInternalTransfer) return;
+
+    const rawEmployeeId =
+      request?.fields?.employeeToTransfer ??
+      request?.fields?.employeeToTransferId ??
+      request?.fields?.employeeId;
+
+    const rawToDepartment =
+      request?.fields?.toDepartment ??
+      request?.fields?.toDepartmentId ??
+      request?.fields?.targetDepartmentId;
+
+    const employeeId =
+      rawEmployeeId === undefined || rawEmployeeId === null || rawEmployeeId === ""
+        ? null
+        : Number(rawEmployeeId);
+
+    let toDepartmentId =
+      rawToDepartment === undefined || rawToDepartment === null || rawToDepartment === ""
+        ? null
+        : Number(rawToDepartment);
+
+    if (!Number.isFinite(toDepartmentId)) {
+      const toDeptName = String(rawToDepartment || "").trim().toLowerCase();
+      const dept = departments?.find(
+        (d) => String(d.name || "").trim().toLowerCase() === toDeptName,
+      );
+      toDepartmentId = dept ? Number(dept.id) : null;
+    }
+
+    if (!Number.isFinite(employeeId) || !Number.isFinite(toDepartmentId)) {
+      alert(
+        "Thiếu dữ liệu employeeToTransfer hoặc toDepartment để thực hiện điều chuyển.\n" +
+          "Gợi ý: hãy tạo đơn với 'Nhân viên cần điều chuyển' và chọn 'Phòng ban chuyển đến' bằng select.",
+      );
+      return;
+    }
+
+    if (!window.confirm("Xác nhận HR thực hiện điều chuyển theo đơn này?")) return;
+
+    try {
+      const empRes = await axios.get(
+        `http://localhost:9999/employees/${employeeId}`,
+      );
+      const emp = empRes.data;
+
+      const updatedEmployee = {
+        ...emp,
+        departmentId: Number(toDepartmentId),
+      };
+
+      await axios.put(
+        `http://localhost:9999/employees/${employeeId}`,
+        updatedEmployee,
+      );
+
+      const updatedRequest = {
+        ...request,
+        executedAt: new Date().toISOString(),
+        executedBy: user?.id,
+        updatedAt: new Date().toISOString(),
+      };
+      await axios.put(
+        `http://localhost:9999/requests/${request.id}`,
+        updatedRequest,
+      );
+
+      await fetchRequests();
+      alert("HR đã thực hiện điều chuyển và cập nhật nhân sự.");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Có lỗi xảy ra khi thực hiện điều chuyển.");
+    }
+  };
 
   // Check if there is any pending step for current user's role & dept
-  const isRejected = request.status === "reject";
-
   const isPendingForMe =
-    !isRejected &&
+    request.status === "inprogress" &&
     request.requestApprovalSteps?.some((step) => {
       const isMyRole = step.approverRoleId === user?.roleId;
       const isMyDept = step.approverDepartmentId
@@ -219,18 +349,28 @@ function RequestDetails() {
                   if (step.status === "approved") {
                     statusBadge = "bg-success";
                     statusText = "Đã duyệt";
-                  } else if (step.status === "pending") {
-                    statusBadge = "bg-warning text-dark";
-                    statusText = "Đang chờ duyệt";
-                  } else if (step.status === "waiting") {
-                    statusBadge = "bg-secondary";
-                    statusText = "Chờ bước trước";
-                  } else if (step.status === "reject") {
+                  } else if (step.status === "rejected") {
                     statusBadge = "bg-danger";
                     statusText = "Đã từ chối";
-                  } else if (step.status === "skipped") {
-                    statusBadge = "bg-dark";
-                    statusText = "Đã bỏ qua";
+                  } else if (step.status === "pending") {
+                    if (request.status === "cancel") {
+                      statusBadge = "bg-secondary text-white";
+                      statusText = "Đã hủy";
+                    } else if (request.status === "reject") {
+                      statusBadge = "bg-danger text-white";
+                      statusText = "Từ chối";
+                    } else {
+                      statusBadge = "bg-warning text-dark";
+                      statusText = "Đang chờ duyệt";
+                    }
+                  } else if (step.status === "waiting") {
+                    if (request.status === "cancel" || request.status === "reject") {
+                      statusBadge = "bg-secondary text-white";
+                      statusText = "Không thực hiện";
+                    } else {
+                      statusBadge = "bg-secondary text-white";
+                      statusText = "Chờ bước trước";
+                    }
                   }
 
                   return (
@@ -317,6 +457,17 @@ function RequestDetails() {
             onClick={cancelRequest}
           >
             Hủy đơn
+          </button>
+        </div>
+      )}
+
+      {canExecuteInternalTransfer && (
+        <div className="d-flex justify-content-end mb-3">
+          <button
+            className="btn btn-warning px-4"
+            onClick={executeInternalTransfer}
+          >
+            HR thực hiện điều chuyển
           </button>
         </div>
       )}

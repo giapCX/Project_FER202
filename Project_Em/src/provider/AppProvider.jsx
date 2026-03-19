@@ -39,15 +39,64 @@ const AppProvider = ({ children }) => {
       setDepartments(departmentsRes.data);
       setEmployees(employeesRes.data);
       setForms(formsRes.data);
-      setRequests(requestsRes.data);
+      setRequests(normalizeRequests(requestsRes.data));
     };
 
     fetchData();
   }, []);
 
+  const ensureInternalTransferSteps = (req) => {
+    if (!req || req.formId !== 5) return req?.requestApprovalSteps;
+
+    const deptId = req.departmentId;
+    const existing = Array.isArray(req.requestApprovalSteps)
+      ? req.requestApprovalSteps
+      : [];
+
+    const base = [
+      { stepOrder: 1, approverRoleId: 2, approverDepartmentId: deptId || null },
+      { stepOrder: 2, approverRoleId: 2, approverDepartmentId: 1 },
+      { stepOrder: 3, approverRoleId: 4, approverDepartmentId: null },
+      { stepOrder: 4, approverRoleId: 2, approverDepartmentId: 1 },
+    ];
+
+    if (existing.length >= 4) return existing;
+
+    const merged = base.map((b) => {
+      const match = existing.find((s) => {
+        const sameRole = Number(s.approverRoleId) === Number(b.approverRoleId);
+        const sameDept =
+          (s.approverDepartmentId ?? null) === (b.approverDepartmentId ?? null);
+        const sameOrder =
+          s.stepOrder ? Number(s.stepOrder) === Number(b.stepOrder) : true;
+        return sameRole && sameDept && sameOrder;
+      });
+      return {
+        ...b,
+        status: match?.status,
+      };
+    });
+
+    const hasPending = merged.some((s) => s.status === "pending");
+    return merged.map((s, idx) => ({
+      ...s,
+      status:
+        s.status || (hasPending ? "waiting" : idx === 0 ? "pending" : "waiting"),
+    }));
+  };
+
+  const normalizeRequests = (list) => {
+    const arr = Array.isArray(list) ? list : [];
+    return arr.map((r) => {
+      if (r?.formId !== 5) return r;
+      const fixedSteps = ensureInternalTransferSteps(r);
+      return fixedSteps ? { ...r, requestApprovalSteps: fixedSteps } : r;
+    });
+  };
+
   const fetchRequests = async () => {
     const res = await axios.get("http://localhost:9999/requests");
-    setRequests(res.data);
+    setRequests(normalizeRequests(res.data));
   };
 
   /* ================= APPROVAL ENGINE ================= */
@@ -81,12 +130,13 @@ const AppProvider = ({ children }) => {
         break;
 
       case "internal_transfer_request":
-        // 1. Manager (cùng phòng người tạo)
+        // Workflow:
+        // employee creates -> manager (same dept) -> HR manager (role 2, dept 1)
+        // -> deputy general director (role 4) -> HR manager executes edit employee
         steps.push({ roleId: 2, departmentId: user.departmentId });
-        // 2. HR Manager (role 2, dept 1 - HR)
         steps.push({ roleId: 2, departmentId: 1 });
-        // 3. Deputy General Director (role 4)
         steps.push({ roleId: 4 });
+        steps.push({ roleId: 2, departmentId: 1 });
         break;
 
       case "sales_contract_discount_approval":
@@ -127,7 +177,17 @@ const AppProvider = ({ children }) => {
     if (!user) throw new Error("Chưa đăng nhập");
 
     const form = forms.find((f) => f.id === formId);
-    const approvalSteps = generateApprovalSteps(form.code, fields);
+
+    let safeForm = form;
+    if (!safeForm) {
+      safeForm = forms.find((f) => f.code === "leave_application");
+    }
+    if (!safeForm) {
+      throw new Error("Form chưa load hoặc không tồn tại");
+    }
+
+    const approvalSteps = generateApprovalSteps(form?.code, fields);
+    const fixedApprovalSteps = generateApprovalSteps(safeForm.code, fields);
 
     const newRequest = {
       formId,
@@ -137,6 +197,7 @@ const AppProvider = ({ children }) => {
       status: "inprogress",
       fields,
       requestApprovalSteps: approvalSteps,
+      requestApprovalSteps: fixedApprovalSteps,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -186,27 +247,22 @@ const AppProvider = ({ children }) => {
   };
 
   const rejectRequest = async (request) => {
-    const updatedSteps = request.requestApprovalSteps.map((step) => {
+    const steps = request.requestApprovalSteps.map((step) => {
       const isMyRole = step.approverRoleId === user.roleId;
       const isMyDept = step.approverDepartmentId
         ? step.approverDepartmentId === user.departmentId
         : true;
 
       if (isMyRole && isMyDept && step.status === "pending") {
-        return { ...step, status: "reject" };
+        return { ...step, status: "rejected" };
       }
-
-      if (step.status === "waiting" || step.status === "pending") {
-        return { ...step, status: "skipped" };
-      }
-
       return step;
     });
 
     const updatedRequest = {
       ...request,
       status: "reject",
-      requestApprovalSteps: updatedSteps,
+      requestApprovalSteps: steps,
       updatedAt: new Date().toISOString(),
     };
 
