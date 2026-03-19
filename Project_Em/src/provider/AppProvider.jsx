@@ -173,8 +173,21 @@ const AppProvider = ({ children }) => {
   };
 
   const rejectRequest = async (request) => {
+    const steps = request.requestApprovalSteps.map((step) => {
+      const isMyRole = step.approverRoleId === user.roleId;
+      const isMyDept = step.approverDepartmentId
+        ? step.approverDepartmentId === user.departmentId
+        : true;
+
+      if (isMyRole && isMyDept && step.status === "pending") {
+        return { ...step, status: "rejected" };
+      }
+      return step;
+    });
+
     const updatedRequest = {
       ...request,
+      requestApprovalSteps: steps,
       status: "reject",
       updatedAt: new Date().toISOString(),
     };

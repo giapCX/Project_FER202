@@ -50,7 +50,7 @@ function RequestDetails() {
     const form = forms.find((f) => f.id === request.formId);
 
     // Check if there is any pending step for current user's role & dept
-    const isPendingForMe = request.requestApprovalSteps?.some(
+    const isPendingForMe = request.status === "inprogress" && request.requestApprovalSteps?.some(
         (step) => {
             const isMyRole = step.approverRoleId === user?.roleId;
             const isMyDept = step.approverDepartmentId ? step.approverDepartmentId === user?.departmentId : true;
@@ -173,12 +173,28 @@ function RequestDetails() {
                                 if (step.status === "approved") {
                                     statusBadge = "bg-success";
                                     statusText = "Đã duyệt";
+                                } else if (step.status === "rejected") {
+                                    statusBadge = "bg-danger text-white";
+                                    statusText = "Từ chối";
                                 } else if (step.status === "pending") {
-                                    statusBadge = "bg-warning text-dark";
-                                    statusText = "Đang chờ duyệt";
+                                    if (request.status === "cancel") {
+                                        statusBadge = "bg-secondary text-white";
+                                        statusText = "Đã hủy";
+                                    } else if (request.status === "reject") {
+                                        statusBadge = "bg-danger text-white";
+                                        statusText = "Từ chối";
+                                    } else {
+                                        statusBadge = "bg-warning text-dark";
+                                        statusText = "Đang chờ duyệt";
+                                    }
                                 } else if (step.status === "waiting") {
-                                    statusBadge = "bg-secondary";
-                                    statusText = "Chờ bước trước";
+                                    if (request.status === "cancel" || request.status === "reject") {
+                                        statusBadge = "bg-secondary text-white";
+                                        statusText = "Không thực hiện";
+                                    } else {
+                                        statusBadge = "bg-secondary text-white";
+                                        statusText = "Chờ bước trước";
+                                    }
                                 }
 
                                 return (

@@ -19,6 +19,7 @@ function DashBoard() {
     cancel: [],
     needApproval: [],
     approved: [],
+    rejectedByMe: [],
   });
 
   useEffect(() => {
@@ -49,7 +50,7 @@ function DashBoard() {
     const needApproval =
       user.roleId !== 1
         ? requests.filter((r) =>
-            r.requestApprovalSteps?.some((step) => {
+            r.status === "inprogress" && r.requestApprovalSteps?.some((step) => {
               const isMyRole = step.approverRoleId === user.roleId;
               const isMyDept = step.approverDepartmentId
                 ? step.approverDepartmentId === user.departmentId
@@ -72,6 +73,19 @@ function DashBoard() {
           )
         : [];
 
+    const rejectedByMe =
+      user.roleId !== 1
+        ? requests.filter((r) =>
+            r.requestApprovalSteps?.some((step) => {
+              const isMyRole = step.approverRoleId === user.roleId;
+              const isMyDept = step.approverDepartmentId
+                ? step.approverDepartmentId === user.departmentId
+                : true;
+              return isMyRole && isMyDept && (step.status === "rejected" || (r.status === "reject" && step.status === "pending"));
+            }),
+          )
+        : [];
+
     setUserRequests({
       inprogress,
       finish,
@@ -79,6 +93,7 @@ function DashBoard() {
       cancel,
       needApproval,
       approved,
+      rejectedByMe,
     });
   }, [forms, requests, user]);
 
@@ -131,6 +146,7 @@ function DashBoard() {
   if (user?.roleId !== 1) {
     tabs.push({ key: "needApproval", label: "Need Approval" });
     tabs.push({ key: "approved", label: "Approved by Me" });
+    tabs.push({ key: "rejectedByMe", label: "Rejected by Me" });
   }
 
   // Add Employee Management tab for HR Manager
