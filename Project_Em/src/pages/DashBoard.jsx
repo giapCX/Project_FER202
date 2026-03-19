@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import EmployeeManager from "../components/EmployeeManager";
+import RequestList from "../components/requests/RequestList";
 
 function DashBoard() {
   const { forms, requests } = useAppContext();
@@ -154,6 +155,7 @@ function DashBoard() {
 
   const tabs = [
     { key: "service", label: "Service" },
+    { key: "requestList", label: "Request List" },
     { key: "inprogress", label: "Ongoing Request" },
     { key: "finish", label: "Finished Request" },
     { key: "reject", label: "Rejected Request" },
@@ -213,6 +215,14 @@ function DashBoard() {
         ) : activeTab === "employeeManagement" ? (
           <div className="col-12">
             <EmployeeManager />
+          </div>
+        ) : activeTab === "requestList" ? (
+          <div className="col-12">
+            <div className="card shadow-sm">
+              <div className="card-body">
+                <RequestList />
+              </div>
+            </div>
           </div>
         ) : userRequests[activeTab]?.length > 0 ? (
           userRequests[activeTab].map((req) => {

@@ -69,9 +69,13 @@ const AppProvider = ({ children }) => {
         break;
 
       case "internal_transfer_request":
-        steps.push({ roleId: 2, departmentId: user.departmentId });
-        steps.push({ roleId: 2, departmentId: 1 });
-        steps.push({ roleId: 4 });
+        // Workflow:
+        // employee creates -> manager (same dept) -> HR manager (role 2, dept 1)
+        // -> deputy general director (role 4) -> HR manager executes edit employee
+        steps.push({ roleId: 2, departmentId: user.departmentId }); // manager
+        steps.push({ roleId: 2, departmentId: 1 }); // HR manager (review)
+        steps.push({ roleId: 4 }); // deputy general director
+        steps.push({ roleId: 2, departmentId: 1 }); // HR manager (execute gate)
         break;
 
       case "sales_contract_discount_approval":

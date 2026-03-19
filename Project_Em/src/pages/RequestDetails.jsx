@@ -48,6 +48,84 @@ function RequestDetails() {
     if (!request) return <div className="container mt-5 text-center">Không tìm thấy đơn!</div>;
 
     const form = forms.find((f) => f.id === request.formId);
+    const isInternalTransfer =
+        form?.code === "internal_transfer_request" || request.formId === 5;
+    const isHrManager = user?.roleId === 2 && user?.departmentId === 1;
+    const canExecuteInternalTransfer =
+        isInternalTransfer &&
+        request.status === "finish" &&
+        isHrManager &&
+        !request?.executedAt;
+
+    const executeInternalTransfer = async () => {
+        if (!canExecuteInternalTransfer) return;
+
+        const rawEmployeeId =
+            request?.fields?.employeeToTransfer ??
+            request?.fields?.employeeToTransferId ??
+            request?.fields?.employeeId;
+
+        const rawToDepartment =
+            request?.fields?.toDepartment ??
+            request?.fields?.toDepartmentId ??
+            request?.fields?.targetDepartmentId;
+
+        const employeeId =
+            rawEmployeeId === undefined || rawEmployeeId === null || rawEmployeeId === ""
+                ? null
+                : Number(rawEmployeeId);
+
+        let toDepartmentId =
+            rawToDepartment === undefined || rawToDepartment === null || rawToDepartment === ""
+                ? null
+                : Number(rawToDepartment);
+
+        // Backward compatible: if toDepartment is a name/string, try mapping by departments list
+        if (!Number.isFinite(toDepartmentId)) {
+            const toDeptName = String(rawToDepartment || "").trim().toLowerCase();
+            const dept = departments?.find(
+                (d) => String(d.name || "").trim().toLowerCase() === toDeptName,
+            );
+            toDepartmentId = dept ? Number(dept.id) : null;
+        }
+
+        if (!Number.isFinite(employeeId) || !Number.isFinite(toDepartmentId)) {
+            alert(
+                "Thiếu dữ liệu employeeToTransfer hoặc toDepartment để thực hiện điều chuyển.\n" +
+                "Gợi ý: hãy tạo đơn với 'Nhân viên cần điều chuyển' và chọn 'Phòng ban chuyển đến' bằng select.",
+            );
+            return;
+        }
+
+        if (!window.confirm("Xác nhận HR thực hiện điều chuyển theo đơn này?")) return;
+
+        try {
+            const empRes = await axios.get(`http://localhost:9999/employees/${employeeId}`);
+            const emp = empRes.data;
+
+            const updatedEmployee = {
+                ...emp,
+                departmentId: Number(toDepartmentId),
+            };
+
+            await axios.put(`http://localhost:9999/employees/${employeeId}`, updatedEmployee);
+
+            const updatedRequest = {
+                ...request,
+                executedAt: new Date().toISOString(),
+                executedBy: user?.id,
+                updatedAt: new Date().toISOString(),
+            };
+            await axios.put(`http://localhost:9999/requests/${request.id}`, updatedRequest);
+
+            await fetchRequests();
+            alert("HR đã thực hiện điều chuyển và cập nhật nhân sự.");
+            navigate("/dashboard");
+        } catch (err) {
+            console.error(err);
+            alert("Có lỗi xảy ra khi thực hiện điều chuyển.");
+        }
+    };
 
     // Check if there is any pending step for current user's role & dept
     const isPendingForMe = request.status === "inprogress" && request.requestApprovalSteps?.some(
@@ -253,6 +331,14 @@ function RequestDetails() {
                 <div className="d-flex justify-content-end mb-3">
                     <button className="btn btn-outline-danger px-4" onClick={cancelRequest}>
                         Hủy đơn
+                    </button>
+                </div>
+            )}
+
+            {canExecuteInternalTransfer && (
+                <div className="d-flex justify-content-end mb-3">
+                    <button className="btn btn-warning px-4" onClick={executeInternalTransfer}>
+                        HR thực hiện điều chuyển
                     </button>
                 </div>
             )}
